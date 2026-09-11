@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+::selection {
+  background: #d7ff3f;
+  color: #08090a;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: #0d0f0e;
+  color: #f3f1e7;
+}
+
+.bg-noise {
+  position: relative;
+}
+.bg-noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+.num-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.input {
+  border-radius: 0.75rem;
+  border: 1px solid #272e29;
+  background-color: #141715;
+  padding: 0.75rem 1rem;
+  color: #f3f1e7;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.input::placeholder {
+  color: rgba(243, 241, 231, 0.3);
+}
+.input:focus {
+  border-color: #d7ff3f;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise-in {
+  animation: rise-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes dial-sweep {
+  from {
+    stroke-dashoffset: var(--dash-full);
+  }
+  to {
+    stroke-dashoffset: var(--dash-value);
+  }
+}
+.dial-sweep {
+  animation: dial-sweep 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.15s;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: marquee 22s linear infinite;
+}
+
+.diagonal-clip {
+  clip-path: polygon(0 0, 100% 0, 100% 88%, 0 100%);
+}
