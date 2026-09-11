@@ -1,22 +1,18 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { scoreWeek, weekBounds } from "@/lib/scoring";
-import { evaluateWeekTitle } from "@/lib/weeklyTitles";
+import { scoreWindow, trailingWindow } from "@/lib/scoring";
+import { TIER_META } from "@/lib/difficulty";
+import { evaluateWeekTitle, titleProgress } from "@/lib/weeklyTitles";
+import { getAudience } from "@/lib/audience";
+import { t } from "@/lib/i18n";
 import AppNav from "@/components/AppNav";
 import ScoreGauge from "@/components/ScoreGauge";
 import WorkoutForm from "@/components/WorkoutForm";
 import WorkoutList from "@/components/WorkoutList";
 import WeekTitleBadge from "@/components/WeekTitleBadge";
-
-const GRADE_COPY: Record<string, string> = {
-  S: "Elite week. This is the kind of number that ends group chat arguments.",
-  A: "Strong week. You're setting the pace — make your friends chase it.",
-  B: "Solid week. A couple more sessions and you're into A territory.",
-  C: "Middling week. The board doesn't forget — get back after it.",
-  D: "Quiet week. Your friends are lapping you right now.",
-  F: "Nothing to show yet. Log a session and put a number on the board.",
-};
+import TitleProgressBar from "@/components/TitleProgressBar";
+import GenderPrompt from "@/components/GenderPrompt";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -25,14 +21,16 @@ export default async function DashboardPage() {
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   if (!user) redirect("/login");
 
-  const { start, end } = weekBounds(new Date());
+  const { start, end } = trailingWindow(new Date());
   const workouts = await prisma.workout.findMany({
     where: { userId: session.userId, date: { gte: start, lt: end } },
     orderBy: { date: "desc" },
   });
 
-  const result = scoreWeek(workouts);
-  const weekTitle = evaluateWeekTitle(result, workouts);
+  const result = scoreWindow(workouts);
+  const audience = await getAudience();
+  const weekTitle = evaluateWeekTitle(result, audience);
+  const progress = titleProgress(result, audience);
   const serializedWorkouts = workouts.map((w) => ({
     ...w,
     date: w.date.toISOString(),
@@ -40,45 +38,53 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <AppNav displayName={user.displayName} />
+      <AppNav displayName={user.displayName} locale={audience.locale} />
       <main className="mx-auto max-w-5xl px-6 py-10 md:px-8">
+        {audience.gender === null && <GenderPrompt locale={audience.locale} />}
         <section className="rise-in flex flex-col gap-8 rounded-2xl border border-coal-600 bg-coal-800 p-6 md:flex-row md:items-center md:gap-12 md:p-8">
           <div className="flex flex-col items-center">
             <ScoreGauge score={result.score} grade={result.grade} />
           </div>
           <div className="flex-1">
-            <p className="font-mono text-xs uppercase tracking-widest text-bone/50">This week&apos;s Fit Score</p>
-            <p className="mt-2 max-w-md text-lg text-bone/80">{GRADE_COPY[result.grade]}</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-bone/50">{t(audience.locale, "score_label")}</p>
 
             <div className="mt-5 max-w-md">
               <WeekTitleBadge weekTitle={weekTitle} />
+              <TitleProgressBar progress={progress} locale={audience.locale} />
             </div>
 
             <div className="mt-6 grid grid-cols-3 gap-4">
-              <StatBar label="Volume" value={result.volumePoints} max={70} />
-              <StatBar label="Consistency" value={result.consistencyPoints} max={20} />
-              <StatBar label="Variety" value={result.varietyPoints} max={10} />
+              <StatBar label={t(audience.locale, "bar_volume")} value={result.volumePoints} max={70} />
+              <StatBar label={t(audience.locale, "bar_consistency")} value={result.consistencyPoints} max={20} />
+              <StatBar label={t(audience.locale, "bar_variety")} value={result.varietyPoints} max={10} />
             </div>
 
             <div className="mt-6 flex flex-wrap gap-x-8 gap-y-2 border-t border-coal-600 pt-5">
-              <Stat label="Active days" value={`${result.activeDays}/7`} />
-              <Stat label="Total minutes" value={String(result.totalMinutes)} />
-              <Stat label="Workouts" value={String(result.workoutCount)} />
+              <Stat label={t(audience.locale, "stat_active_days")} value={`${result.activeDays}/7`} />
+              <Stat label={t(audience.locale, "stat_total_minutes")} value={String(result.totalMinutes)} />
+              <Stat label={t(audience.locale, "stat_workouts")} value={String(result.workoutCount)} />
+              <Stat label={t(audience.locale, "stat_effort")} value={String(result.effort)} />
+              {result.hardest && (
+                <Stat
+                  label={t(audience.locale, "stat_hardest")}
+                  value={`${TIER_META[result.hardest.rating.tier].label} · ${result.hardest.rating.rating}`}
+                />
+              )}
             </div>
           </div>
         </section>
 
         <section className="mt-8 rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
-          <h2 className="font-display text-2xl text-bone">LOG A WORKOUT</h2>
+          <h2 className="font-display text-2xl text-bone">{t(audience.locale, "log_workout").toUpperCase()}</h2>
           <div className="mt-5">
-            <WorkoutForm />
+            <WorkoutForm locale={audience.locale} />
           </div>
         </section>
 
         <section className="mt-8 rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
-          <h2 className="font-display text-2xl text-bone">THIS WEEK</h2>
+          <h2 className="font-display text-2xl text-bone">{t(audience.locale, "last_7_days").toUpperCase()}</h2>
           <div className="mt-5">
-            <WorkoutList workouts={serializedWorkouts} />
+            <WorkoutList workouts={serializedWorkouts} locale={audience.locale} />
           </div>
         </section>
       </main>

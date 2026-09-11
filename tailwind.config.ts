@@ -27,10 +27,12 @@ const config: Config = {
         },
         bone: "#f3f1e7",
       },
+      // Heebo sits behind each Latin face: browsers fall back per glyph, so Latin
+      // keeps Anton/Manrope/Plex and Hebrew — which none of them cover — gets Heebo.
       fontFamily: {
-        display: ["var(--font-anton)", "Impact", "sans-serif"],
-        body: ["var(--font-manrope)", "sans-serif"],
-        mono: ["var(--font-plex-mono)", "monospace"],
+        display: ["var(--font-anton)", "var(--font-heebo)", "Impact", "sans-serif"],
+        body: ["var(--font-manrope)", "var(--font-heebo)", "sans-serif"],
+        mono: ["var(--font-plex-mono)", "var(--font-heebo)", "monospace"],
       },
       backgroundImage: {
         "grain": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E\")",

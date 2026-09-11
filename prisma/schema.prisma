@@ -13,6 +13,10 @@ model User {
   username     String   @unique
   displayName  String
   passwordHash String
+  // "F" | "M" — drives gendered titles and Hebrew grammatical agreement.
+  gender       String?
+  // UI language: "he" (default, RTL) or "en".
+  locale       String   @default("he")
   createdAt    DateTime @default(now())
 
   workouts        Workout[]

@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { WORKOUT_TYPE_ORDER, WORKOUT_TYPES } from "@/lib/workoutTypes";
+import { WORKOUT_TYPE_ORDER, WORKOUT_TYPES, typeLabel } from "@/lib/workoutTypes";
+import { getAudience } from "@/lib/audience";
+import { t } from "@/lib/i18n";
 
 const SAMPLE_BOARD = [
   { rank: 1, name: "Dana K.", grade: "S", score: 96 },
@@ -15,7 +17,9 @@ const gradeStyles: Record<string, string> = {
   C: "text-bone/70",
 };
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const { locale } = await getAudience();
+
   return (
     <main className="min-h-screen bg-coal-900">
       <header className="flex items-center justify-between px-6 py-6 md:px-12">
@@ -27,13 +31,13 @@ export default function LandingPage() {
             href="/login"
             className="rounded-full px-4 py-2 text-sm font-semibold text-bone/80 transition hover:text-bone"
           >
-            Log in
+            {t(locale, "login")}
           </Link>
           <Link
             href="/register"
             className="rounded-full bg-volt px-5 py-2 text-sm font-bold text-coal-950 transition hover:bg-volt-400"
           >
-            Sign up free
+            {t(locale, "land_signup")}
           </Link>
         </nav>
       </header>
@@ -44,32 +48,31 @@ export default function LandingPage() {
         <div className="pointer-events-none absolute -left-16 bottom-0 h-64 w-64 rounded-full bg-coral/20 blur-3xl" />
         <div className="relative mx-auto max-w-5xl px-6 text-center md:px-12">
           <p className="rise-in mb-5 font-mono text-xs uppercase tracking-[0.35em] text-volt">
-            Weekly fitness, scored honestly
+            {t(locale, "land_kicker")}
           </p>
           <h1 className="rise-in font-display text-6xl leading-[0.95] text-bone sm:text-7xl md:text-8xl" style={{ animationDelay: "80ms" }}>
-            KNOW YOUR
+            {t(locale, "land_h1_a").toUpperCase()}
             <br />
-            <span className="text-volt">NUMBER.</span>
+            <span className="text-volt">{t(locale, "land_h1_b").toUpperCase()}</span>
           </h1>
           <p
             className="rise-in mx-auto mt-6 max-w-xl text-balance text-lg text-bone/70"
             style={{ animationDelay: "160ms" }}
           >
-            Log every run, ride, swim and lift. Every Sunday, FitMeter turns your week into one score —
-            then puts it next to your friends&apos; so bragging rights are settled with data.
+            {t(locale, "land_sub")}
           </p>
           <div className="rise-in mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row" style={{ animationDelay: "240ms" }}>
             <Link
               href="/register"
               className="w-full rounded-full bg-volt px-8 py-4 text-center font-bold text-coal-950 transition hover:bg-volt-400 sm:w-auto"
             >
-              Start scoring my week →
+              {t(locale, "land_cta")}
             </Link>
             <Link
               href="/login"
               className="w-full rounded-full border border-bone/20 px-8 py-4 text-center font-semibold text-bone/80 transition hover:border-bone/50 hover:text-bone sm:w-auto"
             >
-              I already have an account
+              {t(locale, "land_have_account")}
             </Link>
           </div>
         </div>
@@ -81,7 +84,7 @@ export default function LandingPage() {
           {[...WORKOUT_TYPE_ORDER, ...WORKOUT_TYPE_ORDER].map((key, i) => (
             <span key={i} className="flex items-center gap-2">
               <span className="text-volt">{WORKOUT_TYPES[key].icon}</span>
-              {WORKOUT_TYPES[key].label}
+              {typeLabel(key, locale)}
             </span>
           ))}
         </div>
@@ -89,23 +92,23 @@ export default function LandingPage() {
 
       {/* How it works */}
       <section className="mx-auto max-w-6xl px-6 py-24 md:px-12">
-        <h2 className="font-display text-4xl text-bone md:text-5xl">HOW IT WORKS</h2>
+        <h2 className="font-display text-4xl text-bone md:text-5xl">{t(locale, "land_how").toUpperCase()}</h2>
         <div className="mt-12 grid gap-6 md:grid-cols-3">
           {[
             {
               n: "01",
-              title: "Log every session",
-              body: "Running, cycling, swimming, lifting, yoga, team sports — drop in duration and effort in ten seconds.",
+              title: t(locale, "land_s1_title"),
+              body: t(locale, "land_s1_body"),
             },
             {
               n: "02",
-              title: "Get a weekly Fit Score",
-              body: "Volume, consistency and variety roll up into one 0–100 score and a letter grade, every Sunday.",
+              title: t(locale, "land_s2_title"),
+              body: t(locale, "land_s2_body"),
             },
             {
               n: "03",
-              title: "Compare with friends",
-              body: "Add friends by username and see a live leaderboard. Nobody wants to be last on Sunday night.",
+              title: t(locale, "land_s3_title"),
+              body: t(locale, "land_s3_body"),
             },
           ].map((step) => (
             <div key={step.n} className="rounded-2xl border border-coal-600 bg-coal-800 p-8">
@@ -121,8 +124,8 @@ export default function LandingPage() {
       <section className="mx-auto max-w-4xl px-6 pb-28 md:px-12">
         <div className="rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-10">
           <div className="mb-6 flex items-baseline justify-between">
-            <h2 className="font-display text-3xl text-bone md:text-4xl">THIS WEEK&apos;S SQUAD</h2>
-            <span className="font-mono text-xs uppercase tracking-widest text-bone/40">Preview</span>
+            <h2 className="font-display text-3xl text-bone md:text-4xl">{t(locale, "land_squad").toUpperCase()}</h2>
+            <span className="font-mono text-xs uppercase tracking-widest text-bone/40">{t(locale, "land_preview")}</span>
           </div>
           <div className="divide-y divide-coal-600">
             {SAMPLE_BOARD.map((row) => (
@@ -130,7 +133,7 @@ export default function LandingPage() {
                 <span className="w-8 font-mono text-lg text-bone/40">{row.rank}</span>
                 <span className="flex-1 font-semibold text-bone">{row.name}</span>
                 <span className={`font-display text-3xl ${gradeStyles[row.grade]}`}>{row.grade}</span>
-                <span className="w-14 text-right font-mono text-lg text-bone/60 num-tabular">{row.score}</span>
+                <span className="w-14 text-end font-mono text-lg text-bone/60 num-tabular">{row.score}</span>
               </div>
             ))}
           </div>
@@ -138,7 +141,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t border-coal-600 px-6 py-10 text-center font-mono text-xs uppercase tracking-widest text-bone/30 md:px-12">
-        FitMeter — built to settle the group chat.
+        {t(locale, "land_footer")}
       </footer>
     </main>
   );

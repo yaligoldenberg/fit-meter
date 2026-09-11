@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { Locale, t } from "@/lib/i18n";
+import LanguageToggle from "./LanguageToggle";
 
 const LINKS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/history", label: "History" },
-  { href: "/leaderboard", label: "Leaderboard" },
-  { href: "/friends", label: "Friends" },
-];
+  { href: "/dashboard", key: "nav_dashboard" },
+  { href: "/history", key: "nav_history" },
+  { href: "/leaderboard", key: "nav_leaderboard" },
+  { href: "/friends", key: "nav_friends" },
+] as const;
 
-export default function AppNav({ displayName }: { displayName: string }) {
+export default function AppNav({ displayName, locale }: { displayName: string; locale: Locale }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -37,12 +39,13 @@ export default function AppNav({ displayName }: { displayName: string }) {
                   active ? "bg-volt text-coal-950" : "text-bone/60 hover:text-bone"
                 }`}
               >
-                {link.label}
+                {t(locale, link.key)}
               </Link>
             );
           })}
         </nav>
         <div className="flex items-center gap-3">
+          <LanguageToggle locale={locale} />
           <span className="hidden font-mono text-xs uppercase tracking-widest text-bone/40 sm:inline">
             {displayName}
           </span>
@@ -50,7 +53,7 @@ export default function AppNav({ displayName }: { displayName: string }) {
             onClick={logout}
             className="rounded-full border border-coal-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bone/60 transition hover:border-coral hover:text-coral"
           >
-            Log out
+            {t(locale, "nav_logout")}
           </button>
         </div>
       </div>
@@ -65,7 +68,7 @@ export default function AppNav({ displayName }: { displayName: string }) {
                 active ? "bg-volt text-coal-950" : "text-bone/60"
               }`}
             >
-              {link.label}
+              {t(locale, link.key)}
             </Link>
           );
         })}

@@ -12,6 +12,8 @@ const schema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, "Letters, numbers and underscores only"),
   displayName: z.string().min(1).max(40),
   password: z.string().min(6).max(72),
+  gender: z.enum(["F", "M"]),
+  locale: z.enum(["he", "en"]).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -20,7 +22,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
-  const { email, username, displayName, password } = parsed.data;
+  const { email, username, displayName, password, gender, locale } = parsed.data;
 
   const existing = await prisma.user.findFirst({
     where: { OR: [{ email: email.toLowerCase() }, { username: username.toLowerCase() }] },
@@ -39,6 +41,8 @@ export async function POST(req: NextRequest) {
       username: username.toLowerCase(),
       displayName,
       passwordHash,
+      gender,
+      locale: locale ?? "he",
     },
   });
 

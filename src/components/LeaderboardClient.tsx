@@ -2,23 +2,17 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { gradeColor } from "@/lib/scoring";
+import { gradeColor, WindowScoreResult } from "@/lib/scoring";
+import { evaluateWeekTitle, tierColor } from "@/lib/weeklyTitles";
+import { Locale, t, tn } from "@/lib/i18n";
 
-interface LeaderboardRow {
+interface LeaderboardRow extends WindowScoreResult {
+  /** Drives כוסית vs מפלצת for this person, not the viewer. */
+  gender: string | null;
   id: string;
   username: string;
   displayName: string;
   isMe: boolean;
-  score: number;
-  grade: string;
-  volumePoints: number;
-  consistencyPoints: number;
-  varietyPoints: number;
-  weightedMinutes: number;
-  activeDays: number;
-  distinctTypes: number;
-  totalMinutes: number;
-  workoutCount: number;
   rank: number;
 }
 
@@ -35,34 +29,38 @@ function initials(name: string): string {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-function formatWeekRange(startIso: string, endIso: string): string {
+function formatWeekRange(startIso: string, endIso: string, locale: Locale): string {
   const start = new Date(startIso);
   const end = new Date(endIso);
   end.setUTCDate(end.getUTCDate() - 1); // end is exclusive; show the inclusive last day
-  const fmt = (d: Date) => d.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+  const localeTag = locale === "he" ? "he-IL" : "en-US";
+  const fmt = (d: Date) => d.toLocaleDateString(localeTag, { month: "short", day: "numeric", timeZone: "UTC" });
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
-export default function LeaderboardClient() {
+export default function LeaderboardClient({ locale }: { locale: Locale }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [data, setData] = useState<LeaderboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (offset: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/leaderboard?weekOffset=${offset}`);
-      if (!res.ok) throw new Error("Failed to load leaderboard");
-      const json = await res.json();
-      setData(json);
-    } catch {
-      setError("Couldn't load the leaderboard. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const load = useCallback(
+    async (offset: number) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/leaderboard?weekOffset=${offset}`);
+        if (!res.ok) throw new Error("Failed to load leaderboard");
+        const json = await res.json();
+        setData(json);
+      } catch {
+        setError(t(locale, "leaderboard_load_error"));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [locale]
+  );
 
   useEffect(() => {
     load(weekOffset);
@@ -71,10 +69,10 @@ export default function LeaderboardClient() {
   return (
     <div className="rise-in rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-display text-4xl text-bone">LEADERBOARD</h1>
+        <h1 className="font-display text-4xl uppercase text-bone">{t(locale, "leaderboard_title")}</h1>
         {weekOffset === 0 && !loading && !error && (
           <span className="rounded-full bg-volt/20 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-volt">
-            This week
+            {t(locale, "lb_last_7")}
           </span>
         )}
       </div>
@@ -84,17 +82,17 @@ export default function LeaderboardClient() {
           onClick={() => setWeekOffset((o) => o - 1)}
           className="rounded-full border border-coal-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bone/60 transition hover:border-bone/40 hover:text-bone"
         >
-          ← Previous week
+          {t(locale, "lb_earlier")}
         </button>
         <span className="font-mono text-xs uppercase tracking-widest text-bone/50">
-          {data ? formatWeekRange(data.weekStart, data.weekEnd) : " "}
+          {data ? formatWeekRange(data.weekStart, data.weekEnd, locale) : " "}
         </span>
         <button
           onClick={() => setWeekOffset((o) => Math.min(0, o + 1))}
           disabled={weekOffset === 0}
           className="rounded-full border border-coal-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bone/60 transition hover:border-bone/40 hover:text-bone disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-coal-600 disabled:hover:text-bone/60"
         >
-          Next week →
+          {t(locale, "lb_later")}
         </button>
       </div>
 
@@ -113,22 +111,20 @@ export default function LeaderboardClient() {
             onClick={() => load(weekOffset)}
             className="rounded-full bg-volt px-5 py-2 text-sm font-bold text-coal-950 transition hover:bg-volt-400"
           >
-            Retry
+            {t(locale, "retry")}
           </button>
         </div>
       )}
 
       {!loading && !error && data && data.leaderboard.length <= 1 && (
         <div className="flex flex-col items-center gap-2 py-14 text-center">
-          <p className="font-display text-2xl text-bone">FLYING SOLO</p>
-          <p className="max-w-xs text-sm text-bone/50">
-            Add friends to start a competition — nobody wants to be the only name on the board.
-          </p>
+          <p className="font-display text-2xl uppercase text-bone">{t(locale, "lb_alone")}</p>
+          <p className="max-w-xs text-sm text-bone/50">{t(locale, "lb_alone_hint")}</p>
           <Link
             href="/friends"
             className="mt-3 rounded-full bg-volt px-5 py-2 text-sm font-bold text-coal-950 transition hover:bg-volt-400"
           >
-            Add friends
+            {t(locale, "add_friends")}
           </Link>
         </div>
       )}
@@ -137,6 +133,10 @@ export default function LeaderboardClient() {
         <ul className="flex flex-col gap-2">
           {data.leaderboard.map((row) => {
             const top3 = row.rank <= 3;
+            const title = evaluateWeekTitle(row, {
+              locale,
+              gender: row.gender === "F" || row.gender === "M" ? row.gender : null,
+            });
             return (
               <li
                 key={row.id}
@@ -161,17 +161,24 @@ export default function LeaderboardClient() {
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold text-bone">
                     {row.displayName}
-                    {row.isMe && <span className="ml-1.5 font-normal text-bone/40">(you)</span>}
+                    {row.isMe && <span className="ms-1.5 font-normal text-bone/40">{t(locale, "you_marker")}</span>}
+                  </p>
+                  <p className={`truncate text-[11px] font-semibold ${tierColor(title.tier)}`}>
+                    {title.emoji} {title.title}
                   </p>
                   <p className="font-mono text-[11px] uppercase tracking-wide text-bone/40">
-                    {row.activeDays} day{row.activeDays === 1 ? "" : "s"} · {row.workoutCount} workout
-                    {row.workoutCount === 1 ? "" : "s"}
+                    {tn(locale, "lb_days", row.activeDays)} · {tn(locale, "lb_workouts", row.workoutCount)}
                   </p>
                 </div>
-                <span className={`font-display text-3xl ${gradeColor(row.grade)}`}>{row.grade}</span>
-                <span className="num-tabular w-10 shrink-0 text-right font-mono text-sm text-bone/60">
-                  {row.score}
-                </span>
+                <div className="flex shrink-0 flex-col items-end gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className={`font-display text-3xl ${gradeColor(row.grade)}`}>{row.grade}</span>
+                    <span className="num-tabular w-10 text-end font-mono text-sm text-bone/60">{row.score}</span>
+                  </div>
+                  <span className="num-tabular font-mono text-[10px] uppercase tracking-wide text-bone/40">
+                    {row.effort} {t(locale, "lb_effort")}
+                  </span>
+                </div>
               </li>
             );
           })}
