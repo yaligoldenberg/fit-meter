@@ -22,11 +22,15 @@ const TITLE_HREFS = ["/ranks"];
 
 export default function AppNav({
   displayName,
+  username,
   locale,
   showLeaderboard = true,
   showRanks = true,
 }: {
   displayName: string;
+  /** Shown in the header because it is what people log in with, and the one thing
+      about their own account they have no other way to look up. */
+  username: string;
   locale: Locale;
   /** Hide the Leaderboard link for study arms that must not reach it. Defaults to true. */
   showLeaderboard?: boolean;
@@ -71,9 +75,17 @@ export default function AppNav({
         </nav>
         <div className="flex items-center gap-3">
           <LanguageToggle locale={locale} />
-          <span className="hidden font-mono text-xs uppercase tracking-widest text-bone/40 sm:inline">
-            {displayName}
-          </span>
+          <div className="max-w-[8rem] text-end leading-tight sm:max-w-[11rem]">
+            <span className="hidden truncate font-mono text-xs uppercase tracking-widest text-bone/40 sm:block">
+              {displayName}
+            </span>
+            <span
+              className="block truncate font-mono text-[11px] text-bone/30"
+              title={t(locale, "nav_your_username")}
+            >
+              @{username}
+            </span>
+          </div>
           <button
             onClick={logout}
             className="rounded-full border border-coal-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bone/60 transition hover:border-coral hover:text-coral"

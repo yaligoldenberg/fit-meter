@@ -12,7 +12,7 @@ export default async function FriendsPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { displayName: true, condition: true },
+    select: { displayName: true, username: true, condition: true },
   });
   if (!user) redirect("/login");
 
@@ -23,6 +23,7 @@ export default async function FriendsPage() {
     <>
       <AppNav
         displayName={user.displayName}
+        username={user.username}
         locale={audience.locale}
         showLeaderboard={view.showLeaderboard}
         showRanks={view.showTitles}

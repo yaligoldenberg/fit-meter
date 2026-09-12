@@ -37,6 +37,7 @@ const STRINGS = {
     nav_history: "היסטוריה",
     nav_friends: "חברים",
     nav_logout: "התנתקות",
+    nav_your_username: "שם המשתמש שלך — איתו מתחברים",
 
     score_label: "ציון כושר · 7 ימים אחרונים",
     stat_active_days: "ימים פעילים",
@@ -253,6 +254,7 @@ const STRINGS = {
     nav_history: "History",
     nav_friends: "Friends",
     nav_logout: "Log out",
+    nav_your_username: "Your username — this is what you log in with",
 
     score_label: "Fit Score · last 7 days",
     stat_active_days: "Active days",

@@ -152,6 +152,7 @@ export default async function DashboardPage() {
     <>
       <AppNav
         displayName={user.displayName}
+        username={user.username}
         locale={audience.locale}
         showLeaderboard={view.showLeaderboard}
         showRanks={view.showTitles}

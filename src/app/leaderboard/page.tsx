@@ -12,7 +12,7 @@ export default async function LeaderboardPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { displayName: true, condition: true },
+    select: { displayName: true, username: true, condition: true },
   });
   if (!user) redirect("/login");
 
@@ -27,6 +27,7 @@ export default async function LeaderboardPage() {
     <>
       <AppNav
         displayName={user.displayName}
+        username={user.username}
         locale={audience.locale}
         showLeaderboard={view.showLeaderboard}
         showRanks={view.showTitles}

@@ -148,7 +148,7 @@ const LADDER: Rung[] = [
     emoji: "🚛",
     tier: "RESET",
     minScore: 1,
-    title: { he: ["משאית", "טנק"], en: ["Truck", "Tank"] },
+    title: { he: ["משאית", "משאית"], en: ["Truck", "Truck"] },
     line: {
       he: (r) => `${r.workoutCount} אימונים ב-7 ימים. הטורבו כבוי לגמרי.`,
       en: (r) => `${r.workoutCount} session${r.workoutCount === 1 ? "" : "s"} in 7 days. Turbo completely off.`,

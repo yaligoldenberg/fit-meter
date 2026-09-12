@@ -51,6 +51,7 @@ export default async function RanksPage() {
     <>
       <AppNav
         displayName={user.displayName}
+        username={user.username}
         locale={audience.locale}
         showLeaderboard={view.showLeaderboard}
         showRanks={view.showTitles}
