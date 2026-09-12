@@ -120,12 +120,3 @@ export async function membershipOf(groupId: string, userId: string) {
 
   return { group, isOwner: group.ownerId === userId };
 }
-
-/** The ids ranked on a group's leaderboard. */
-export async function memberIdsOf(groupId: string): Promise<string[]> {
-  const rows = await prisma.groupMember.findMany({
-    where: { groupId },
-    select: { userId: true },
-  });
-  return rows.map((r) => r.userId);
-}
