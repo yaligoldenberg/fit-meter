@@ -19,6 +19,7 @@ interface LeaderboardRow extends WindowScoreResult {
 interface LeaderboardResponse {
   weekStart: string;
   weekEnd: string;
+  groupName: string | null;
   leaderboard: LeaderboardRow[];
 }
 
@@ -38,7 +39,18 @@ function formatWeekRange(startIso: string, endIso: string, locale: Locale): stri
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
-export default function LeaderboardClient({ locale }: { locale: Locale }) {
+/**
+ * Ranks the people around you for a week. Without `groupId` that is your friends;
+ * with one it is that group's members, friends or not.
+ */
+export default function LeaderboardClient({
+  locale,
+  groupId,
+}: {
+  locale: Locale;
+  /** Scope the board to one group instead of your friend list. */
+  groupId?: string;
+}) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [data, setData] = useState<LeaderboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +61,9 @@ export default function LeaderboardClient({ locale }: { locale: Locale }) {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/leaderboard?weekOffset=${offset}`);
+        const params = new URLSearchParams({ weekOffset: String(offset) });
+        if (groupId) params.set("groupId", groupId);
+        const res = await fetch(`/api/leaderboard?${params}`);
         if (!res.ok) throw new Error("Failed to load leaderboard");
         const json = await res.json();
         setData(json);
@@ -59,7 +73,7 @@ export default function LeaderboardClient({ locale }: { locale: Locale }) {
         setLoading(false);
       }
     },
-    [locale]
+    [locale, groupId]
   );
 
   useEffect(() => {
@@ -69,7 +83,9 @@ export default function LeaderboardClient({ locale }: { locale: Locale }) {
   return (
     <div className="rise-in rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-display text-4xl uppercase text-bone">{t(locale, "leaderboard_title")}</h1>
+        <h1 className="font-display text-4xl uppercase text-bone">
+          {t(locale, groupId ? "groups_leaderboard" : "leaderboard_title")}
+        </h1>
         {weekOffset === 0 && !loading && !error && (
           <span className="rounded-full bg-volt/20 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-volt">
             {t(locale, "lb_last_7")}
@@ -119,13 +135,17 @@ export default function LeaderboardClient({ locale }: { locale: Locale }) {
       {!loading && !error && data && data.leaderboard.length <= 1 && (
         <div className="flex flex-col items-center gap-2 py-14 text-center">
           <p className="font-display text-2xl uppercase text-bone">{t(locale, "lb_alone")}</p>
-          <p className="max-w-xs text-sm text-bone/50">{t(locale, "lb_alone_hint")}</p>
-          <Link
-            href="/friends"
-            className="mt-3 rounded-full bg-volt px-5 py-2 text-sm font-bold text-coal-950 transition hover:bg-volt-400"
-          >
-            {t(locale, "add_friends")}
-          </Link>
+          <p className="max-w-xs text-sm text-bone/50">
+            {t(locale, groupId ? "groups_alone_hint" : "lb_alone_hint")}
+          </p>
+          {!groupId && (
+            <Link
+              href="/friends"
+              className="mt-3 rounded-full bg-volt px-5 py-2 text-sm font-bold text-coal-950 transition hover:bg-volt-400"
+            >
+              {t(locale, "add_friends")}
+            </Link>
+          )}
         </div>
       )}
 

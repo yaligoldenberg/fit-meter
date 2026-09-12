@@ -1,0 +1,36 @@
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { getAudience } from "@/lib/audience";
+import { viewFor } from "@/lib/research";
+import AppNav from "@/components/AppNav";
+import GroupsPanel from "@/components/GroupsPanel";
+
+export default async function GroupsPage() {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { displayName: true, username: true, condition: true },
+  });
+  if (!user) redirect("/login");
+
+  const audience = await getAudience();
+  const view = viewFor(user.condition);
+
+  return (
+    <>
+      <AppNav
+        displayName={user.displayName}
+        username={user.username}
+        locale={audience.locale}
+        showLeaderboard={view.showLeaderboard}
+        showRanks={view.showTitles}
+      />
+      <main className="mx-auto max-w-3xl px-6 py-10 md:px-8">
+        <GroupsPanel locale={audience.locale} />
+      </main>
+    </>
+  );
+}

@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/leaderboard", key: "nav_leaderboard" },
   { href: "/feed", key: "nav_feed" },
   { href: "/friends", key: "nav_friends" },
+  { href: "/groups", key: "nav_groups" },
 ] as const;
 
 /** Social surfaces hidden together for study arms that must not reach them. */

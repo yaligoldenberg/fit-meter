@@ -4,7 +4,7 @@ import { jwtVerify } from "jose";
 const SESSION_COOKIE = "fitmeter_session";
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "dev-only-secret");
 
-const PROTECTED_PATHS = ["/dashboard", "/history", "/friends", "/leaderboard", "/feed", "/ranks", "/profile"];
+const PROTECTED_PATHS = ["/dashboard", "/history", "/friends", "/groups", "/leaderboard", "/feed", "/ranks", "/profile"];
 const AUTH_PATHS = ["/login", "/register"];
 
 async function isAuthed(req: NextRequest): Promise<boolean> {
@@ -40,5 +40,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/history/:path*", "/friends/:path*", "/leaderboard/:path*", "/feed/:path*", "/ranks/:path*", "/profile/:path*", "/login", "/register"],
+  matcher: ["/dashboard/:path*", "/history/:path*", "/friends/:path*", "/groups/:path*", "/leaderboard/:path*", "/feed/:path*", "/ranks/:path*", "/profile/:path*", "/login", "/register"],
 };

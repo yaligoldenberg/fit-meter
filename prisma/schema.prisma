@@ -26,13 +26,45 @@ model User {
   goalValue    Int?
   createdAt    DateTime @default(now())
 
-  workouts        Workout[]
-  reactions       Reaction[]
-  comments        Comment[]
-  events          Event[]
-  passwordResets  PasswordReset[]
-  sentRequests    Friendship[] @relation("Requester")
-  receivedRequests Friendship[] @relation("Addressee")
+  workouts         Workout[]
+  reactions        Reaction[]
+  comments         Comment[]
+  events           Event[]
+  passwordResets   PasswordReset[]
+  sentRequests     Friendship[]    @relation("Requester")
+  receivedRequests Friendship[]    @relation("Addressee")
+  ownedGroups      Group[]         @relation("GroupOwner")
+  groupMemberships GroupMember[]
+}
+
+/// A named group with its own leaderboard. Unlike friendship, membership is not
+/// mutual-consent: you join with the code, and everyone in the group is ranked
+/// against everyone else regardless of who is friends with whom.
+model Group {
+  id        String   @id @default(cuid())
+  name      String
+  /// Short shareable code — the only way in, so it is unique and unguessable enough
+  /// that a wrong guess lands on nothing rather than on someone else's group.
+  joinCode  String   @unique
+  ownerId   String
+  owner     User     @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  members GroupMember[]
+
+  @@index([ownerId])
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now())
+
+  @@unique([groupId, userId])
+  @@index([userId])
 }
 
 /// Research telemetry: what a participant SAW, which workouts alone can't tell us.
@@ -62,18 +94,18 @@ model PasswordReset {
 }
 
 model Workout {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String
-  duration  Int
-  intensity String
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       String
+  duration   Int
+  intensity  String
   distanceKm Float?
-  note      String?
-  date      DateTime
-  createdAt DateTime @default(now())
-  reactions Reaction[]
-  comments  Comment[]
+  note       String?
+  date       DateTime
+  createdAt  DateTime   @default(now())
+  reactions  Reaction[]
+  comments   Comment[]
 
   @@index([userId, date])
   @@index([createdAt])
@@ -108,13 +140,13 @@ model Reaction {
 }
 
 model Friendship {
-  id           String   @id @default(cuid())
-  requesterId  String
-  addresseeId  String
-  requester    User     @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
-  addressee    User     @relation("Addressee", fields: [addresseeId], references: [id], onDelete: Cascade)
-  status       String   @default("PENDING")
-  createdAt    DateTime @default(now())
+  id          String   @id @default(cuid())
+  requesterId String
+  addresseeId String
+  requester   User     @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee   User     @relation("Addressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
 
   @@unique([requesterId, addresseeId])
 }

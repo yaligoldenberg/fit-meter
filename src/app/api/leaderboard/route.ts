@@ -5,6 +5,16 @@ import { viewFor, recordEvent } from "@/lib/research";
 import { scoreWindow, trailingWindow, ScorableWorkout } from "@/lib/scoring";
 import { getAudience } from "@/lib/audience";
 import { apiError } from "@/lib/apiErrors";
+import { membershipOf } from "@/lib/groups";
+
+interface Person {
+  id: string;
+  username: string;
+  displayName: string;
+  gender: string | null;
+}
+
+const PERSON_FIELDS = { id: true, username: true, displayName: true, gender: true } as const;
 
 export async function GET(req: NextRequest) {
   const { locale } = await getAudience();
@@ -12,23 +22,12 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: apiError("unauthorized", locale) }, { status: 401 });
 
   const weekOffset = Number(req.nextUrl.searchParams.get("weekOffset") ?? "0") || 0;
+  const groupId = req.nextUrl.searchParams.get("groupId");
   const { start, end } = trailingWindow(new Date(), weekOffset);
 
-  const relations = await prisma.friendship.findMany({
-    where: {
-      status: "ACCEPTED",
-      OR: [{ requesterId: session.userId }, { addresseeId: session.userId }],
-    },
-    include: {
-      requester: { select: { id: true, username: true, displayName: true, gender: true } },
-      addressee: { select: { id: true, username: true, displayName: true, gender: true } },
-    },
-  });
-
-  const peopleMap = new Map<string, { id: string; username: string; displayName: string; gender: string | null }>();
   const me = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { id: true, username: true, displayName: true, gender: true, condition: true },
+    select: { ...PERSON_FIELDS, condition: true },
   });
 
   // Gate on the study arm, exactly like /api/feed — the page-level redirect alone would
@@ -38,17 +37,46 @@ export async function GET(req: NextRequest) {
   }
 
   const { condition: _condition, ...meRow } = me;
+  const peopleMap = new Map<string, Person>();
   peopleMap.set(meRow.id, meRow);
-  for (const r of relations) {
-    const other = r.requesterId === session.userId ? r.addressee : r.requester;
-    peopleMap.set(other.id, other);
+
+  let groupName: string | null = null;
+
+  if (groupId) {
+    // 404 for a group you are not in, so ids cannot be probed for member lists.
+    const membership = await membershipOf(groupId, session.userId);
+    if (!membership) {
+      return NextResponse.json({ error: apiError("not_found", locale) }, { status: 404 });
+    }
+    groupName = membership.group.name;
+
+    const members = await prisma.groupMember.findMany({
+      where: { groupId },
+      select: { user: { select: PERSON_FIELDS } },
+    });
+    for (const m of members) peopleMap.set(m.user.id, m.user);
+  } else {
+    const relations = await prisma.friendship.findMany({
+      where: {
+        status: "ACCEPTED",
+        OR: [{ requesterId: session.userId }, { addresseeId: session.userId }],
+      },
+      include: {
+        requester: { select: PERSON_FIELDS },
+        addressee: { select: PERSON_FIELDS },
+      },
+    });
+    for (const r of relations) {
+      const other = r.requesterId === session.userId ? r.addressee : r.requester;
+      peopleMap.set(other.id, other);
+    }
   }
 
   const people = Array.from(peopleMap.values());
   const ids = people.map((p) => p.id);
 
   // One query for everyone's workouts in the window instead of one per person — with the
-  // DB in a different region, a per-friend round trip adds up fast on a big friend list.
+  // DB in a different region, a per-person round trip adds up fast on a big group.
   const allWorkouts = ids.length
     ? await prisma.workout.findMany({
         where: { userId: { in: ids }, date: { gte: start, lt: end } },
@@ -74,12 +102,15 @@ export async function GET(req: NextRequest) {
   await recordEvent(session.userId, "LEADERBOARD_VIEW", {
     condition: me.condition,
     source: "api",
+    scope: groupId ? "group" : "friends",
+    groupId: groupId ?? undefined,
     people: ranked.length,
   });
 
   return NextResponse.json({
     weekStart: start.toISOString(),
     weekEnd: end.toISOString(),
+    groupName,
     leaderboard: ranked,
   });
 }
