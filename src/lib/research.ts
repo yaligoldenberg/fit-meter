@@ -26,21 +26,25 @@ export interface ConditionView {
   showScore: boolean;
 }
 
-export function viewFor(condition: string): ConditionView {
-  switch (condition) {
-    case "LOG_ONLY":
-      return { showTitles: false, showLeaderboard: false, showScore: false };
-    case "SCORE_ONLY":
-      return { showTitles: false, showLeaderboard: false, showScore: true };
-    default:
-      return { showTitles: true, showLeaderboard: true, showScore: true };
-  }
+/**
+ * The three-arm split has been retired: every user now sees the whole app.
+ *
+ * The call sites still ask before rendering titles, the leaderboard or the score, so
+ * restoring the study means putting the switch back here and nothing else. The
+ * `condition` column is likewise left in place — still stored, no longer consulted.
+ */
+export function viewFor(_condition: string): ConditionView {
+  return { showTitles: true, showLeaderboard: true, showScore: true };
 }
 
 /**
  * Assigns the next participant to the smallest arm, keeping the three groups balanced
  * as people trickle in. Ties break randomly so the order of arrival can't bias which
  * arm a given person lands in.
+ *
+ * Nothing calls this now that every user sees the full app — registration lets the
+ * column fall to its schema default. Kept so the randomised design can be restored
+ * without having to write it again.
  */
 export async function assignCondition(): Promise<Condition> {
   const counts = await prisma.user.groupBy({ by: ["condition"], _count: { _all: true } });
@@ -55,11 +59,21 @@ export async function assignCondition(): Promise<Condition> {
 export type EventType =
   | "DASHBOARD_VIEW"
   | "LEADERBOARD_VIEW"
+  | "RANKS_VIEW"
   | "HISTORY_VIEW"
   | "FEED_VIEW"
   | "KUDOS_GIVEN"
   | "TITLE_CHANGE"
   | "WORKOUT_LOGGED";
+
+/**
+ * Telemetry is off unless TELEMETRY=on.
+ *
+ * One row per page view made Event the fastest-growing table in the schema, and the
+ * database has little headroom to spare. With the arms retired there is no analysis
+ * waiting on these rows, so the default is to write nothing.
+ */
+const TELEMETRY_ENABLED = process.env.TELEMETRY === "on";
 
 /**
  * Records what a participant saw. Never throws: a telemetry failure must not break
@@ -70,6 +84,7 @@ export async function recordEvent(
   type: EventType,
   meta?: Record<string, unknown>
 ): Promise<void> {
+  if (!TELEMETRY_ENABLED) return;
   try {
     await prisma.event.create({
       data: { userId, type, meta: meta ? JSON.stringify(meta) : null },

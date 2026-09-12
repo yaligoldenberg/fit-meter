@@ -35,6 +35,12 @@ export interface TitleProgress {
   percent: number;
   /** Ways to close the gap, best value first. */
   routes: TitleRoute[];
+  /** The rung below — what the rolling window drops them to if they coast. Null at the bottom. */
+  previous: WeekTitle | null;
+  /** Score points of cushion before falling to `previous`. Null at the bottom. */
+  pointsToDrop: number | null;
+  /** Whether that cushion is thin enough to be worth telling them about. */
+  atRisk: boolean;
 }
 
 /** Who is being described: locale picks the language, gender picks the grammatical form. */
@@ -89,6 +95,15 @@ export function tierBorder(tier: TitleTier): string {
   }
 }
 
+/**
+ * How thin the cushion has to get before we warn about losing the current title.
+ *
+ * Eight points is roughly two active days ageing out of the rolling window — close
+ * enough that one skipped week costs the title, far enough that a participant sitting
+ * comfortably mid-band isn't nagged. Raise it to make loss aversion louder.
+ */
+export const DROP_WARNING_POINTS = 8;
+
 /** [feminine, masculine] — Hebrew needs both. */
 type Gendered = [string, string];
 
@@ -121,7 +136,7 @@ const LADDER: Rung[] = [
     emoji: "🛋️",
     tier: "RESET",
     minScore: 0,
-    title: { he: ["כונפה", "בטטה"], en: ["Couch Potato", "Couch Potato"] },
+    title: { he: ["כונפה", "כונפה"], en: ["Couch Locked", "Couch Locked"] },
     line: {
       he: (_r, g) =>
         `שבוע שלם על הספה. כולם על הלוח, ו${f(g, "את בכלל לא", "אתה בכלל לא")} בתחרות.`,
@@ -144,7 +159,7 @@ const LADDER: Rung[] = [
     emoji: "🌱",
     tier: "LIGHT",
     minScore: 25,
-    title: { he: ["מתעוררת", "מתעורר"], en: ["Waking Up", "Waking Up"] },
+    title: { he: ["מתעוררת", "מתעורר"], en: ["Defrosting", "Defrosting"] },
     line: {
       he: (r) => `${r.effort} מאמץ ב-${r.activeDays} ימים. המנוע התחיל להתחמם.`,
       en: (r) => `${r.effort} effort across ${r.activeDays} day${r.activeDays === 1 ? "" : "s"}. Engine's warming up.`,
@@ -332,6 +347,17 @@ export function titleProgress(
   const current = rungFor(result.score);
   const index = LADDER.findIndex((r) => r.id === current.id);
   const next = index < LADDER.length - 1 ? LADDER[index + 1] : null;
+  const below = index > 0 ? LADDER[index - 1] : null;
+
+  // The window rolls, so a title is held rather than owned: the score falls out of this
+  // band the moment it dips below the rung's threshold. That downward edge is the half of
+  // the ladder the app has never shown, and it's the half people act on hardest.
+  const pointsToDrop = below ? result.score - current.minScore + 1 : null;
+  const downward = {
+    previous: below ? toTitle(below, result, audience, {}) : null,
+    pointsToDrop,
+    atRisk: pointsToDrop !== null && pointsToDrop <= DROP_WARNING_POINTS,
+  };
 
   if (!next) {
     return {
@@ -340,6 +366,7 @@ export function titleProgress(
       pointsToNext: 0,
       percent: 100,
       routes: [],
+      ...downward,
     };
   }
 
@@ -382,5 +409,76 @@ export function titleProgress(
     pointsToNext,
     percent,
     routes,
+    ...downward,
   };
+}
+
+/** Points reachable with habit alone: 5 active days (20) plus 3 activity types (10). */
+const FULL_HABIT_POINTS = CONSISTENCY_CAP + VARIETY_CAP;
+
+/**
+ * What a rung costs, on the two routes that bracket every other one: max out the cheap
+ * habit points and buy the rest with volume, or buy the whole thing with volume alone.
+ * Volume caps at 70 points, so the top rungs genuinely cannot be bought that way — which
+ * is the most useful thing the rank list can tell someone.
+ */
+export interface RungRequirement {
+  /** MET-minutes still needed once consistency and variety are both maxed. */
+  effortWithFullHabit: number;
+  minutesWithFullHabit: number;
+  /** MET-minutes needed on volume alone, or null when volume can't reach this rung. */
+  effortVolumeOnly: number | null;
+  minutesVolumeOnly: number | null;
+}
+
+export interface LadderRung {
+  id: string;
+  emoji: string;
+  tier: TitleTier;
+  minScore: number;
+  /** Both grammatical forms — the ladder is shown in full to everyone, whatever title they hold. */
+  titleF: string;
+  titleM: string;
+  requirement: RungRequirement;
+}
+
+function requirementFor(minScore: number): RungRequirement {
+  const fromVolume = Math.max(0, minScore - FULL_HABIT_POINTS);
+  const effortWithFullHabit = Math.ceil(fromVolume * EFFORT_PER_VOLUME_POINT);
+  const effortVolumeOnly = minScore <= 70 ? Math.ceil(minScore * EFFORT_PER_VOLUME_POINT) : null;
+
+  return {
+    effortWithFullHabit,
+    minutesWithFullHabit: effortWithFullHabit > 0 ? minutesForEffort(effortWithFullHabit) : 0,
+    effortVolumeOnly,
+    minutesVolumeOnly:
+      effortVolumeOnly !== null && effortVolumeOnly > 0 ? minutesForEffort(effortVolumeOnly) : effortVolumeOnly,
+  };
+}
+
+/**
+ * The whole ladder, lowest rung first, with both gendered names resolved.
+ *
+ * No score result is involved: this describes what is on offer, not what anyone has
+ * earned, which is what lets a single list be shown identically to every participant.
+ */
+export function titleLadder(locale: Locale): LadderRung[] {
+  return LADDER.map((rung) => ({
+    id: rung.id,
+    emoji: rung.emoji,
+    tier: rung.tier,
+    minScore: rung.minScore,
+    titleF: rung.title[locale][0],
+    titleM: rung.title[locale][1],
+    requirement: requirementFor(rung.minScore),
+  }));
+}
+
+/** Index into `titleLadder` of the rung a given score currently sits on. */
+export function ladderIndexFor(score: number): number {
+  let index = 0;
+  LADDER.forEach((rung, i) => {
+    if (score >= rung.minScore) index = i;
+  });
+  return index;
 }

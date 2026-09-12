@@ -14,7 +14,7 @@ import {
   intensityLabel,
 } from "@/lib/workoutTypes";
 import { rateWorkout, explainRating, TIER_META } from "@/lib/difficulty";
-import { t, Locale } from "@/lib/i18n";
+import { t, tn, Locale } from "@/lib/i18n";
 import AppNav from "@/components/AppNav";
 import WeekTitleBadge from "@/components/WeekTitleBadge";
 
@@ -52,6 +52,7 @@ export default async function HistoryPage({
   if (!user) redirect("/login");
 
   const audience = await getAudience();
+  const view = viewFor(user.condition);
   await recordEvent(session.userId, "HISTORY_VIEW", { condition: user.condition });
   const MONTH_DAY = monthDayFormatter(audience.locale);
   const WEEKDAY_MONTH_DAY = weekdayMonthDayFormatter(audience.locale);
@@ -63,7 +64,9 @@ export default async function HistoryPage({
       where: { userId: session.userId, date: { gte: start, lt: end } },
     });
     const result = scoreWindow(workouts);
-    const weekTitle = evaluateWeekTitle(result, audience);
+    // Titles are the study's manipulation: the control arms must not meet one here
+    // either, so this page gates per field rather than redirecting like /ranks does.
+    const weekTitle = view.showTitles ? evaluateWeekTitle(result, audience) : null;
     weeks.push({ start, end, isCurrent: i === 0, weekTitle, ...result });
   }
   const weeksMostRecentFirst = [...weeks].reverse();
@@ -100,7 +103,8 @@ export default async function HistoryPage({
       <AppNav
         displayName={user.displayName}
         locale={audience.locale}
-        showLeaderboard={viewFor(user.condition).showLeaderboard}
+        showLeaderboard={view.showLeaderboard}
+        showRanks={view.showTitles}
       />
       <main className="mx-auto max-w-5xl px-6 py-10 md:px-8">
         <h1 className="font-display text-4xl text-bone md:text-5xl">{t(audience.locale, "history_heading")}</h1>
@@ -119,6 +123,7 @@ export default async function HistoryPage({
           </div>
         ) : (
           <>
+            {view.showScore && (
             <section className="mt-8 rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
               <h2 className="font-mono text-xs uppercase tracking-widest text-bone/50">
                 {t(audience.locale, "history_trend_heading")}
@@ -126,9 +131,11 @@ export default async function HistoryPage({
               <div className="mt-6 flex h-48 items-end gap-2 md:gap-3">
                 {weeks.map((w) => (
                   <div key={w.start.toISOString()} className="group relative flex flex-1 flex-col items-center gap-2">
-                    <span className="text-base leading-none" title={w.weekTitle.title}>
-                      {w.weekTitle.emoji}
-                    </span>
+                    {w.weekTitle && (
+                      <span className="text-base leading-none" title={w.weekTitle.title}>
+                        {w.weekTitle.emoji}
+                      </span>
+                    )}
                     <span className={`font-display text-lg ${gradeColor(w.grade)}`}>{w.grade}</span>
                     <div className="flex h-32 w-full items-end overflow-hidden rounded-t-md bg-coal-700">
                       <div
@@ -147,7 +154,9 @@ export default async function HistoryPage({
                 ))}
               </div>
             </section>
+            )}
 
+            {view.showScore && (
             <section className="mt-8">
               <h2 className="font-mono text-xs uppercase tracking-widest text-bone/50">
                 {t(audience.locale, "history_recap_heading")}
@@ -171,8 +180,18 @@ export default async function HistoryPage({
                         )}
                       </div>
                       <div className="flex-1">
-                        <WeekTitleBadge weekTitle={w.weekTitle} compact />
-                        <p className="mt-1.5 text-sm text-bone/60">{w.weekTitle.reason}</p>
+                        {w.weekTitle ? (
+                          <>
+                            <WeekTitleBadge weekTitle={w.weekTitle} compact />
+                            <p className="mt-1.5 text-sm text-bone/60">{w.weekTitle.reason}</p>
+                          </>
+                        ) : (
+                          <p className="text-sm text-bone/60">
+                            {tn(audience.locale, "lb_workouts", w.workoutCount)} ·{" "}
+                            {w.totalMinutes} {t(audience.locale, "unit_min")} ·{" "}
+                            {tn(audience.locale, "lb_days", w.activeDays)}
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 sm:flex-col sm:items-end">
                         <span className={`font-display text-2xl ${gradeColor(w.grade)}`}>{w.grade}</span>
@@ -182,6 +201,7 @@ export default async function HistoryPage({
                   ))}
               </div>
             </section>
+            )}
 
             <section className="mt-8">
               <h2 className="font-mono text-xs uppercase tracking-widest text-bone/50">

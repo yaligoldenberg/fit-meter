@@ -2,6 +2,7 @@ import Link from "next/link";
 import { WORKOUT_TYPE_ORDER, WORKOUT_TYPES, typeLabel } from "@/lib/workoutTypes";
 import { getAudience } from "@/lib/audience";
 import { t } from "@/lib/i18n";
+import LanguageToggle from "@/components/LanguageToggle";
 
 const SAMPLE_BOARD = [
   { rank: 1, name: "Dana K.", grade: "S", score: 96 },
@@ -27,6 +28,7 @@ export default async function LandingPage() {
           FIT<span className="text-volt">METER</span>
         </div>
         <nav className="flex items-center gap-3">
+          <LanguageToggle locale={locale} />
           <Link
             href="/login"
             className="rounded-full px-4 py-2 text-sm font-semibold text-bone/80 transition hover:text-bone"

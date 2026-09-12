@@ -150,7 +150,12 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <AppNav displayName={user.displayName} locale={audience.locale} showLeaderboard={view.showLeaderboard} />
+      <AppNav
+        displayName={user.displayName}
+        locale={audience.locale}
+        showLeaderboard={view.showLeaderboard}
+        showRanks={view.showTitles}
+      />
       <main className="mx-auto max-w-5xl px-6 py-10 md:px-8">
         {audience.gender === null && <GenderPrompt locale={audience.locale} />}
         {view.showScore && (
@@ -159,6 +164,9 @@ export default async function DashboardPage() {
             <GoalCard progress={goal} locale={audience.locale} />
           </div>
         )}
+        {/* Every child here is gated, so for LOG_ONLY the whole panel would otherwise
+            render as an empty bordered box that reads as a broken page. */}
+        {(view.showScore || view.showTitles) && (
         <section className="rise-in flex flex-col gap-8 rounded-2xl border border-coal-600 bg-coal-800 p-6 md:flex-row md:items-center md:gap-12 md:p-8">
           {view.showScore && (
             <div className="flex flex-col items-center">
@@ -201,6 +209,7 @@ export default async function DashboardPage() {
             )}
           </div>
         </section>
+        )}
 
         <section className="mt-8 rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
           <h2 className="font-display text-2xl text-bone">{t(audience.locale, "log_workout").toUpperCase()}</h2>

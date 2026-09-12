@@ -25,7 +25,12 @@ export default async function LeaderboardPage() {
 
   return (
     <>
-      <AppNav displayName={user.displayName} locale={audience.locale} showLeaderboard={view.showLeaderboard} />
+      <AppNav
+        displayName={user.displayName}
+        locale={audience.locale}
+        showLeaderboard={view.showLeaderboard}
+        showRanks={view.showTitles}
+      />
       <main className="mx-auto max-w-3xl px-6 py-10 md:px-8">
         <LeaderboardClient locale={audience.locale} />
       </main>

@@ -4,10 +4,11 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { getAudience } from "@/lib/audience";
 import { apiError } from "@/lib/apiErrors";
-import { GOAL_LIMITS, isGoalType } from "@/lib/goals";
+import { GOAL_LIMITS, GOAL_TYPES, isGoalType } from "@/lib/goals";
 
 const schema = z.object({
-  type: z.enum(["WORKOUTS", "DAYS", "EFFORT"]).nullable(),
+  // Mirrors GOAL_TYPES; the cast keeps zod's tuple happy while the list stays single-sourced.
+  type: z.enum(GOAL_TYPES as unknown as [string, ...string[]]).nullable(),
   value: z.number().int().positive().nullable(),
 });
 

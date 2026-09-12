@@ -25,6 +25,7 @@ export default async function FriendsPage() {
         displayName={user.displayName}
         locale={audience.locale}
         showLeaderboard={view.showLeaderboard}
+        showRanks={view.showTitles}
       />
       <main className="mx-auto max-w-2xl px-6 py-10 md:px-8">
         <FriendsPanel locale={audience.locale} />

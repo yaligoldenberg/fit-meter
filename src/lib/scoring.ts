@@ -19,6 +19,8 @@ export interface WindowScoreResult {
   activeDays: number;
   distinctTypes: number;
   totalMinutes: number;
+  /** Kilometres logged in the window; workouts without a distance contribute nothing. */
+  totalDistanceKm: number;
   workoutCount: number;
   /** The single hardest session in the window, for "best effort" callouts. */
   hardest: { type: string; effort: number; rating: WorkoutRating } | null;
@@ -46,6 +48,7 @@ export const WINDOW_DAYS = 7;
 export function scoreWindow(workouts: ScorableWorkout[]): WindowScoreResult {
   let effort = 0;
   let totalMinutes = 0;
+  let totalDistanceKm = 0;
   const activeDays = new Set<string>();
   const types = new Set<string>();
   let hardest: WindowScoreResult["hardest"] = null;
@@ -54,6 +57,7 @@ export function scoreWindow(workouts: ScorableWorkout[]): WindowScoreResult {
     const rating = rateWorkout(w);
     effort += rating.effort;
     totalMinutes += w.duration;
+    totalDistanceKm += w.distanceKm ?? 0;
     activeDays.add(w.date.toISOString().slice(0, 10));
     types.add(w.type);
     if (!hardest || rating.effort > hardest.effort) {
@@ -78,6 +82,8 @@ export function scoreWindow(workouts: ScorableWorkout[]): WindowScoreResult {
     activeDays: activeDays.size,
     distinctTypes: types.size,
     totalMinutes,
+    // One decimal: distances are logged to the tenth, and summing floats drifts.
+    totalDistanceKm: Math.round(totalDistanceKm * 10) / 10,
     workoutCount: workouts.length,
     hardest,
   };

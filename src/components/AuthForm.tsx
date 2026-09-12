@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Locale, t } from "@/lib/i18n";
+import LanguageToggle from "./LanguageToggle";
 
 type Mode = "login" | "register";
 
@@ -68,9 +69,12 @@ export default function AuthForm({ mode, locale }: { mode: Mode; locale: Locale 
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
-      <Link href="/" className="mb-10 font-display text-2xl tracking-wide text-bone">
+      <Link href="/" className="mb-8 font-display text-2xl tracking-wide text-bone">
         FIT<span className="text-volt">METER</span>
       </Link>
+      <div className="mb-8">
+        <LanguageToggle locale={locale} variant="full" />
+      </div>
       <h1 className="font-display text-4xl text-bone">
         {t(locale, mode === "login" ? "auth_welcome_back" : "auth_join").toUpperCase()}
       </h1>

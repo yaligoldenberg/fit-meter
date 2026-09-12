@@ -8,6 +8,7 @@ import LanguageToggle from "./LanguageToggle";
 const LINKS = [
   { href: "/dashboard", key: "nav_dashboard" },
   { href: "/history", key: "nav_history" },
+  { href: "/ranks", key: "nav_ranks" },
   { href: "/leaderboard", key: "nav_leaderboard" },
   { href: "/feed", key: "nav_feed" },
   { href: "/friends", key: "nav_friends" },
@@ -16,19 +17,29 @@ const LINKS = [
 /** Social surfaces hidden together for study arms that must not reach them. */
 const SOCIAL_HREFS = ["/leaderboard", "/feed"];
 
+/** The title ladder, hidden from arms that see no titles at all. */
+const TITLE_HREFS = ["/ranks"];
+
 export default function AppNav({
   displayName,
   locale,
   showLeaderboard = true,
+  showRanks = true,
 }: {
   displayName: string;
   locale: Locale;
   /** Hide the Leaderboard link for study arms that must not reach it. Defaults to true. */
   showLeaderboard?: boolean;
+  /** Hide the Ranks link for study arms that see no titles. Defaults to true. */
+  showRanks?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const links = showLeaderboard ? LINKS : LINKS.filter((link) => !SOCIAL_HREFS.includes(link.href));
+  const links = LINKS.filter(
+    (link) =>
+      (showLeaderboard || !SOCIAL_HREFS.includes(link.href)) &&
+      (showRanks || !TITLE_HREFS.includes(link.href))
+  );
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { hashPassword, createSessionToken, SESSION_COOKIE } from "@/lib/auth";
-import { assignCondition, recordEvent } from "@/lib/research";
+import { recordEvent } from "@/lib/research";
 import { apiError } from "@/lib/apiErrors";
 
 const schema = z.object({
@@ -36,9 +36,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Randomised here and fixed for the study — a condition cannot be assigned after
-  // the fact, so every account must get one at the moment it is created.
-  const condition = await assignCondition();
   const passwordHash = await hashPassword(password);
 
   let user;
@@ -51,7 +48,6 @@ export async function POST(req: NextRequest) {
         passwordHash,
         gender,
         locale: locale ?? "he",
-        condition,
       },
     });
   } catch (e) {
@@ -65,7 +61,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: apiError(key, locale ?? "he") }, { status: 409 });
   }
 
-  await recordEvent(user.id, "DASHBOARD_VIEW", { source: "registration", condition });
+  await recordEvent(user.id, "DASHBOARD_VIEW", { source: "registration" });
 
   const token = await createSessionToken({ userId: user.id, username: user.username });
   const res = NextResponse.json({ id: user.id, username: user.username, displayName: user.displayName });
