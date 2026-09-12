@@ -56,6 +56,8 @@ export type EventType =
   | "DASHBOARD_VIEW"
   | "LEADERBOARD_VIEW"
   | "HISTORY_VIEW"
+  | "FEED_VIEW"
+  | "KUDOS_GIVEN"
   | "TITLE_CHANGE"
   | "WORKOUT_LOGGED";
 

@@ -21,9 +21,14 @@ model User {
   // TITLES = full social app, SCORE_ONLY = own score but no titles/leaderboard,
   // LOG_ONLY = logging only. See src/lib/research.ts.
   condition    String   @default("TITLES")
+  /// Optional self-set weekly target: "WORKOUTS" | "DAYS" | "EFFORT", with its value.
+  goalType     String?
+  goalValue    Int?
   createdAt    DateTime @default(now())
 
   workouts        Workout[]
+  reactions       Reaction[]
+  comments        Comment[]
   events          Event[]
   passwordResets  PasswordReset[]
   sentRequests    Friendship[] @relation("Requester")
@@ -67,8 +72,39 @@ model Workout {
   note      String?
   date      DateTime
   createdAt DateTime @default(now())
+  reactions Reaction[]
+  comments  Comment[]
 
   @@index([userId, date])
+  @@index([createdAt])
+}
+
+/// A friend's comment on a workout. Capped short and deletable by its author.
+model Comment {
+  id        String   @id @default(cuid())
+  workoutId String
+  workout   Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([workoutId, createdAt])
+}
+
+/// A friend's reaction to a workout — the social loop the study is actually about.
+/// One reaction per person per workout; changing emoji overwrites the old one.
+model Reaction {
+  id        String   @id @default(cuid())
+  workoutId String
+  workout   Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+  createdAt DateTime @default(now())
+
+  @@unique([workoutId, userId])
+  @@index([workoutId])
 }
 
 model Friendship {

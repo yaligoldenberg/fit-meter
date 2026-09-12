@@ -6,6 +6,9 @@ import { TIER_META } from "@/lib/difficulty";
 import { evaluateWeekTitle, titleProgress, TitleContext } from "@/lib/weeklyTitles";
 import { getAudience } from "@/lib/audience";
 import { viewFor, recordEvent } from "@/lib/research";
+import { computeStreak } from "@/lib/streaks";
+import { computeRecords } from "@/lib/records";
+import { goalProgress, isGoalType } from "@/lib/goals";
 import { t } from "@/lib/i18n";
 import AppNav from "@/components/AppNav";
 import ScoreGauge from "@/components/ScoreGauge";
@@ -14,6 +17,9 @@ import WorkoutList from "@/components/WorkoutList";
 import WeekTitleBadge from "@/components/WeekTitleBadge";
 import TitleProgressBar from "@/components/TitleProgressBar";
 import GenderPrompt from "@/components/GenderPrompt";
+import StreakBadge from "@/components/StreakBadge";
+import GoalCard from "@/components/GoalCard";
+import RecordsCard from "@/components/RecordsCard";
 
 /**
  * Last week's score and the friend nearest on the board — the two things the title copy
@@ -105,6 +111,18 @@ export default async function DashboardPage() {
   const audience = await getAudience();
   const view = viewFor(user.condition);
 
+  // Streaks and records both span the user's whole history, so one query serves both.
+  const history = await prisma.workout.findMany({
+    where: { userId: session.userId },
+    select: { id: true, type: true, duration: true, intensity: true, distanceKm: true, date: true },
+  });
+  const streak = computeStreak(history);
+  const records = computeRecords(history);
+  const goal =
+    isGoalType(user.goalType) && user.goalValue
+      ? goalProgress(user.goalType, user.goalValue, result)
+      : null;
+
   // The copy is comparative, so it needs something to compare against. Only gathered
   // for the arm that actually sees titles — the other arms must not be told where they
   // stand relative to friends, or the control is contaminated.
@@ -123,6 +141,7 @@ export default async function DashboardPage() {
     condition: user.condition,
     score: result.score,
     title: weekTitle.id,
+    streak: streak.current,
   });
 
   return (
@@ -130,6 +149,12 @@ export default async function DashboardPage() {
       <AppNav displayName={user.displayName} locale={audience.locale} showLeaderboard={view.showLeaderboard} />
       <main className="mx-auto max-w-5xl px-6 py-10 md:px-8">
         {audience.gender === null && <GenderPrompt locale={audience.locale} />}
+        {view.showScore && (
+          <div className="mb-6 grid gap-4 md:grid-cols-2">
+            <StreakBadge streak={streak} locale={audience.locale} />
+            <GoalCard progress={goal} locale={audience.locale} />
+          </div>
+        )}
         <section className="rise-in flex flex-col gap-8 rounded-2xl border border-coal-600 bg-coal-800 p-6 md:flex-row md:items-center md:gap-12 md:p-8">
           {view.showScore && (
             <div className="flex flex-col items-center">
@@ -179,6 +204,12 @@ export default async function DashboardPage() {
             <WorkoutForm locale={audience.locale} />
           </div>
         </section>
+
+        {view.showScore && (
+          <section className="mt-8">
+            <RecordsCard records={records} locale={audience.locale} />
+          </section>
+        )}
 
         <section className="mt-8 rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
           <h2 className="font-display text-2xl text-bone">{t(audience.locale, "last_7_days").toUpperCase()}</h2>

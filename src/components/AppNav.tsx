@@ -9,8 +9,12 @@ const LINKS = [
   { href: "/dashboard", key: "nav_dashboard" },
   { href: "/history", key: "nav_history" },
   { href: "/leaderboard", key: "nav_leaderboard" },
+  { href: "/feed", key: "nav_feed" },
   { href: "/friends", key: "nav_friends" },
 ] as const;
+
+/** Social surfaces hidden together for study arms that must not reach them. */
+const SOCIAL_HREFS = ["/leaderboard", "/feed"];
 
 export default function AppNav({
   displayName,
@@ -24,7 +28,7 @@ export default function AppNav({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const links = showLeaderboard ? LINKS : LINKS.filter((link) => link.href !== "/leaderboard");
+  const links = showLeaderboard ? LINKS : LINKS.filter((link) => !SOCIAL_HREFS.includes(link.href));
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
