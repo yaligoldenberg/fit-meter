@@ -78,6 +78,7 @@ export async function GET(req: NextRequest) {
   const comments = await prisma.comment.findMany({
     where: { workoutId },
     orderBy: { createdAt: "asc" },
+    take: 200,
     include: { user: { select: { id: true, displayName: true, username: true } } },
   });
 

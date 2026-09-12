@@ -17,10 +17,21 @@ function isTable(value: string | null): value is Table {
   return !!value && (TABLES as readonly string[]).includes(value);
 }
 
-/** Quotes a field only when needed, doubling embedded quotes — RFC 4126-style CSV escaping. */
+/**
+ * Spreadsheets evaluate a field beginning with =, +, - or @ as a formula, so a
+ * participant's workout note becomes executable the moment a researcher opens the CSV.
+ * Prefixing an apostrophe forces Excel and Sheets to treat it as text.
+ */
+function neutralizeFormula(value: string): string {
+  return /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+}
+
+/** Quotes a field only when needed, doubling embedded quotes — RFC 4180-style CSV escaping. */
+
 function csvEscape(value: unknown): string {
   if (value === null || value === undefined) return "";
-  const s = value instanceof Date ? value.toISOString() : String(value);
+  const raw = value instanceof Date ? value.toISOString() : String(value);
+  const s = neutralizeFormula(raw);
   if (/[",\n\r]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`;
   }

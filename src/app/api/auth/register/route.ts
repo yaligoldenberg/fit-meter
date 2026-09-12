@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { hashPassword, createSessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { assignCondition, recordEvent } from "@/lib/research";
+import { apiError } from "@/lib/apiErrors";
 
 const schema = z.object({
   email: z.string().email(),
@@ -39,17 +40,30 @@ export async function POST(req: NextRequest) {
   // the fact, so every account must get one at the moment it is created.
   const condition = await assignCondition();
   const passwordHash = await hashPassword(password);
-  const user = await prisma.user.create({
-    data: {
-      email: email.toLowerCase(),
-      username: username.toLowerCase(),
-      displayName,
-      passwordHash,
-      gender,
-      locale: locale ?? "he",
-      condition,
-    },
-  });
+
+  let user;
+  try {
+    user = await prisma.user.create({
+      data: {
+        email: email.toLowerCase(),
+        username: username.toLowerCase(),
+        displayName,
+        passwordHash,
+        gender,
+        locale: locale ?? "he",
+        condition,
+      },
+    });
+  } catch (e) {
+    // Two simultaneous signups can both clear the check above; the unique constraint is
+    // the real arbiter, so translate its violation instead of returning a 500.
+    const target = (e as { code?: string; meta?: { target?: string[] } })?.code === "P2002"
+      ? (e as { meta?: { target?: string[] } }).meta?.target ?? []
+      : null;
+    if (!target) throw e;
+    const key = target.includes("email") ? "email_taken" : "username_taken";
+    return NextResponse.json({ error: apiError(key, locale ?? "he") }, { status: 409 });
+  }
 
   await recordEvent(user.id, "DASHBOARD_VIEW", { source: "registration", condition });
 

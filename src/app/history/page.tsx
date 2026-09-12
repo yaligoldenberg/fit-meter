@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getAudience } from "@/lib/audience";
+import { viewFor, recordEvent } from "@/lib/research";
 import { scoreWindow, trailingWindow, gradeColor } from "@/lib/scoring";
 import { evaluateWeekTitle, tierColor } from "@/lib/weeklyTitles";
 import {
@@ -46,11 +47,12 @@ export default async function HistoryPage({
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { displayName: true },
+    select: { displayName: true, condition: true },
   });
   if (!user) redirect("/login");
 
   const audience = await getAudience();
+  await recordEvent(session.userId, "HISTORY_VIEW", { condition: user.condition });
   const MONTH_DAY = monthDayFormatter(audience.locale);
   const WEEKDAY_MONTH_DAY = weekdayMonthDayFormatter(audience.locale);
 
@@ -95,7 +97,11 @@ export default async function HistoryPage({
 
   return (
     <div className="min-h-screen bg-coal-900">
-      <AppNav displayName={user.displayName} locale={audience.locale} />
+      <AppNav
+        displayName={user.displayName}
+        locale={audience.locale}
+        showLeaderboard={viewFor(user.condition).showLeaderboard}
+      />
       <main className="mx-auto max-w-5xl px-6 py-10 md:px-8">
         <h1 className="font-display text-4xl text-bone md:text-5xl">{t(audience.locale, "history_heading")}</h1>
         <p className="mt-2 text-sm text-bone/60">{t(audience.locale, "history_subtitle")}</p>

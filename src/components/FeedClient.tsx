@@ -33,6 +33,7 @@ interface FeedItem {
   user: FeedUser;
   rating?: FeedRating | null;
   reactionCount?: number;
+  commentCount?: number;
   emojis?: string[];
   myReaction?: string | null;
 }
@@ -251,7 +252,7 @@ export default function FeedClient({ locale, meId }: { locale: Locale; meId: str
                       )}
                     </div>
 
-                    <CommentThread workoutId={item.id} locale={locale} />
+                    <CommentThread workoutId={item.id} locale={locale} initialCount={item.commentCount ?? 0} />
                   </div>
                 </li>
               );

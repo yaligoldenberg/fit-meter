@@ -7,7 +7,7 @@ import { evaluateWeekTitle, titleProgress, TitleContext } from "@/lib/weeklyTitl
 import { getAudience } from "@/lib/audience";
 import { viewFor, recordEvent } from "@/lib/research";
 import { computeStreak } from "@/lib/streaks";
-import { computeRecords } from "@/lib/records";
+import { computeRecords, isRecordBreaking } from "@/lib/records";
 import { goalProgress, isGoalType } from "@/lib/goals";
 import { t } from "@/lib/i18n";
 import AppNav from "@/components/AppNav";
@@ -130,9 +130,13 @@ export default async function DashboardPage() {
 
   const weekTitle = evaluateWeekTitle(result, audience, context);
   const progress = titleProgress(result, audience);
+  const recordIds = new Set(
+    workouts.filter((w) => isRecordBreaking(w, history)).map((w) => w.id)
+  );
   const serializedWorkouts = workouts.map((w) => ({
     ...w,
     date: w.date.toISOString(),
+    isRecord: recordIds.has(w.id),
   }));
 
   // Record what the participant saw — score and title are logged even when hidden

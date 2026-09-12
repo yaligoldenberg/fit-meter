@@ -44,6 +44,7 @@ export default function AuthForm({ mode, locale }: { mode: Mode; locale: Locale 
               displayName: form.displayName,
               password: form.password,
               gender,
+              locale,
             };
 
       const res = await fetch(url, {

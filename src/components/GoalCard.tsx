@@ -19,17 +19,24 @@ export default function GoalCard({
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [type, setType] = useState<GoalType>(progress?.type ?? "WORKOUTS");
   const [value, setValue] = useState<number>(progress?.target ?? GOAL_LIMITS.WORKOUTS.suggested);
 
   async function save(nextType: GoalType | null, nextValue: number | null) {
     setBusy(true);
     try {
-      await fetch("/api/goal", {
+      const res = await fetch("/api/goal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: nextType, value: nextValue }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? t(locale, "generic_error"));
+        return;
+      }
+      setError(null);
       setEditing(false);
       router.refresh();
     } finally {
@@ -102,6 +109,7 @@ export default function GoalCard({
                 </button>
               )}
             </div>
+            {error && <p className="mt-2 text-xs text-coral">{error}</p>}
           </>
         )}
       </div>

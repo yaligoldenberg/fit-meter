@@ -67,8 +67,7 @@ export async function POST(req: NextRequest) {
 
   if (existing) {
     if (existing.status === "ACCEPTED") {
-      // No apiErrors key for this yet (need: already_friends) — kept in English, see report.
-      return NextResponse.json({ error: "You're already friends" }, { status: 409 });
+      return NextResponse.json({ error: apiError("already_friends", locale) }, { status: 409 });
     }
     if (existing.requesterId === session.userId) {
       return NextResponse.json({ error: apiError("request_already_sent", locale) }, { status: 409 });

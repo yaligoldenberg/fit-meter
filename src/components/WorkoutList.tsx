@@ -20,6 +20,7 @@ interface WorkoutItem {
   distanceKm: number | null;
   note: string | null;
   date: string;
+  isRecord?: boolean;
 }
 
 const INTENSITY_BADGE: Record<string, string> = {
@@ -92,6 +93,11 @@ export default function WorkoutList({ workouts, locale }: { workouts: WorkoutIte
                   {w.distanceKm ? (
                     <span className="font-mono text-xs text-bone/50">{w.distanceKm} {t(locale, "unit_km")}</span>
                   ) : null}
+                  {w.isRecord && (
+                    <span className="rounded-full border border-volt bg-volt/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-volt">
+                      {t(locale, "record_new")}
+                    </span>
+                  )}
                   <span
                     title={explainRating(w, rating, locale)}
                     className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest ${tier.className}`}

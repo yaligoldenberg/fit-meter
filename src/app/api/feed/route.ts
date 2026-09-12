@@ -42,14 +42,10 @@ export async function GET(req: NextRequest) {
     Math.max(1, Number.isFinite(rawLimit) ? Math.trunc(rawLimit) : DEFAULT_LIMIT)
   );
 
-  const beforeParam = req.nextUrl.searchParams.get("before");
-  let before: Date | null = null;
-  if (beforeParam) {
-    before = new Date(beforeParam);
-    if (Number.isNaN(before.getTime())) {
-      return NextResponse.json({ error: apiError("invalid_date", locale) }, { status: 400 });
-    }
-  }
+  // Cursor is a workout id, not a date: workouts are stored at UTC midnight, so every
+  // friend who trained on the same day shares one timestamp and a date cursor would skip
+  // all but the first of them.
+  const cursor = req.nextUrl.searchParams.get("cursor");
 
   // Resolve ACCEPTED friendships both directions in one query — same approach as
   // /api/leaderboard. Never fan out into one query per friend.
@@ -69,10 +65,11 @@ export async function GET(req: NextRequest) {
   const workouts = await prisma.workout.findMany({
     where: {
       userId: { in: ids },
-      ...(before ? { date: { lt: before } } : {}),
+
     },
-    orderBy: { date: "desc" },
+    orderBy: [{ date: "desc" }, { createdAt: "desc" }, { id: "desc" }],
     take: limit,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: { user: { select: ownerSelect } },
   });
 
@@ -86,6 +83,17 @@ export async function GET(req: NextRequest) {
         select: { workoutId: true, userId: true, emoji: true },
       })
     : [];
+
+  // One grouped query for comment counts — the thread toggle should show a number
+  // without opening thirty threads.
+  const commentGroups = workoutIds.length
+    ? await prisma.comment.groupBy({
+        by: ["workoutId"],
+        where: { workoutId: { in: workoutIds } },
+        _count: { _all: true },
+      })
+    : [];
+  const commentCounts = new Map(commentGroups.map((g) => [g.workoutId, g._count._all]));
 
   const reactionsByWorkout = new Map<string, { userId: string; emoji: string }[]>();
   for (const r of reactions) {
@@ -110,6 +118,7 @@ export async function GET(req: NextRequest) {
       date: w.date.toISOString(),
       user: w.user,
       rating: { effort: rating.effort, tier: rating.tier, rating: rating.rating },
+      commentCount: commentCounts.get(w.id) ?? 0,
       reactionCount: forThis.length,
       emojis,
       myReaction: mine?.emoji ?? null,
@@ -117,10 +126,8 @@ export async function GET(req: NextRequest) {
   });
 
   // Research telemetry: what the participant saw, not just what they logged.
-  await recordEvent(session.userId, "FEED_VIEW", { count: items.length });
-
   const last = workouts[workouts.length - 1];
-  const nextCursor = items.length === limit && last ? last.date.toISOString() : null;
+  const nextCursor = items.length === limit && last ? last.id : null;
 
   return NextResponse.json({ items, nextCursor });
 }

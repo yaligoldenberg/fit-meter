@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { viewFor, recordEvent } from "@/lib/research";
 import { scoreWindow, trailingWindow, ScorableWorkout } from "@/lib/scoring";
 import { getAudience } from "@/lib/audience";
 import { apiError } from "@/lib/apiErrors";
@@ -27,9 +28,17 @@ export async function GET(req: NextRequest) {
   const peopleMap = new Map<string, { id: string; username: string; displayName: string; gender: string | null }>();
   const me = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { id: true, username: true, displayName: true, gender: true },
+    select: { id: true, username: true, displayName: true, gender: true, condition: true },
   });
-  if (me) peopleMap.set(me.id, me);
+
+  // Gate on the study arm, exactly like /api/feed — the page-level redirect alone would
+  // leave this data one curl away for a control-arm participant, and invisibly so.
+  if (!me || !viewFor(me.condition).showLeaderboard) {
+    return NextResponse.json({ error: apiError("unauthorized", locale) }, { status: 403 });
+  }
+
+  const { condition: _condition, ...meRow } = me;
+  peopleMap.set(meRow.id, meRow);
   for (const r of relations) {
     const other = r.requesterId === session.userId ? r.addressee : r.requester;
     peopleMap.set(other.id, other);
@@ -61,6 +70,12 @@ export async function GET(req: NextRequest) {
 
   results.sort((a, b) => b.score - a.score || b.effort - a.effort);
   const ranked = results.map((r, i) => ({ ...r, rank: i + 1 }));
+
+  await recordEvent(session.userId, "LEADERBOARD_VIEW", {
+    condition: me.condition,
+    source: "api",
+    people: ranked.length,
+  });
 
   return NextResponse.json({
     weekStart: start.toISOString(),
