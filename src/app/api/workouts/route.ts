@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { WORKOUT_TYPE_ORDER } from "@/lib/workoutTypes";
+import { getAudience } from "@/lib/audience";
+import { apiError } from "@/lib/apiErrors";
 
 const schema = z.object({
   type: z.enum(WORKOUT_TYPE_ORDER as [string, ...string[]]),
@@ -14,8 +16,9 @@ const schema = z.object({
 });
 
 export async function GET() {
+  const { locale } = await getAudience();
   const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return NextResponse.json({ error: apiError("unauthorized", locale) }, { status: 401 });
 
   const workouts = await prisma.workout.findMany({
     where: { userId: session.userId },
@@ -26,18 +29,19 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const { locale } = await getAudience();
   const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return NextResponse.json({ error: apiError("unauthorized", locale) }, { status: 401 });
 
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
+    return NextResponse.json({ error: apiError("invalid_input", locale) }, { status: 400 });
   }
   const { type, duration, intensity, distanceKm, note, date } = parsed.data;
   const parsedDate = new Date(date);
   if (Number.isNaN(parsedDate.getTime())) {
-    return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+    return NextResponse.json({ error: apiError("invalid_date", locale) }, { status: 400 });
   }
 
   const workout = await prisma.workout.create({

@@ -3,8 +3,9 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { scoreWindow, trailingWindow } from "@/lib/scoring";
 import { TIER_META } from "@/lib/difficulty";
-import { evaluateWeekTitle, titleProgress } from "@/lib/weeklyTitles";
+import { evaluateWeekTitle, titleProgress, TitleContext } from "@/lib/weeklyTitles";
 import { getAudience } from "@/lib/audience";
+import { viewFor, recordEvent } from "@/lib/research";
 import { t } from "@/lib/i18n";
 import AppNav from "@/components/AppNav";
 import ScoreGauge from "@/components/ScoreGauge";
@@ -13,6 +14,79 @@ import WorkoutList from "@/components/WorkoutList";
 import WeekTitleBadge from "@/components/WeekTitleBadge";
 import TitleProgressBar from "@/components/TitleProgressBar";
 import GenderPrompt from "@/components/GenderPrompt";
+
+/**
+ * Last week's score and the friend nearest on the board — the two things the title copy
+ * compares against. One query for the previous window, one for every friend's workouts.
+ */
+async function buildTitleContext(userId: string, currentStart: Date): Promise<TitleContext> {
+  const previous = trailingWindow(new Date(), -1);
+  const previousWorkouts = await prisma.workout.findMany({
+    where: { userId, date: { gte: previous.start, lt: previous.end } },
+  });
+  const previousScore = scoreWindow(previousWorkouts).score;
+
+  const friendships = await prisma.friendship.findMany({
+    where: {
+      status: "ACCEPTED",
+      OR: [{ requesterId: userId }, { addresseeId: userId }],
+    },
+    include: {
+      requester: { select: { id: true, displayName: true } },
+      addressee: { select: { id: true, displayName: true } },
+    },
+  });
+
+  const friends = friendships.map((f) => (f.requesterId === userId ? f.addressee : f.requester));
+  if (friends.length === 0) return { previousScore };
+
+  // Both windows for everyone in one query each, so "who did I pass?" is answerable
+  // without a round trip per friend.
+  const ids = [userId, ...friends.map((p) => p.id)];
+  const { end } = trailingWindow(new Date());
+  const [nowRows, thenRows] = await Promise.all([
+    prisma.workout.findMany({ where: { userId: { in: ids }, date: { gte: currentStart, lt: end } } }),
+    prisma.workout.findMany({
+      where: { userId: { in: ids }, date: { gte: previous.start, lt: previous.end } },
+    }),
+  ]);
+
+  const effortIn = (rows: typeof nowRows, id: string) =>
+    scoreWindow(rows.filter((w) => w.userId === id)).effort;
+
+  const myEffortNow = effortIn(nowRows, userId);
+  const myEffortThen = effortIn(thenRows, userId);
+
+  const standings = friends.map((p) => ({
+    name: p.displayName,
+    now: effortIn(nowRows, p.id),
+    then: effortIn(thenRows, p.id),
+  }));
+
+  // Ahead of you last week, behind you this week.
+  const overtaken = standings
+    .filter((p) => p.then > myEffortThen && p.now < myEffortNow)
+    .sort((a, b) => b.now - a.now)
+    .map((p) => p.name);
+
+  const aheadOf = standings.filter((p) => p.now < myEffortNow).length;
+
+  const nearest = [...standings].sort(
+    (a, b) => Math.abs(a.now - myEffortNow) - Math.abs(b.now - myEffortNow)
+  )[0];
+
+  return {
+    previousScore,
+    overtaken,
+    aheadOf,
+    friendCount: friends.length,
+    rival: {
+      name: nearest.name,
+      effortGap: Math.abs(nearest.now - myEffortNow),
+      ahead: nearest.now > myEffortNow,
+    },
+  };
+}
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -29,48 +103,73 @@ export default async function DashboardPage() {
 
   const result = scoreWindow(workouts);
   const audience = await getAudience();
-  const weekTitle = evaluateWeekTitle(result, audience);
+  const view = viewFor(user.condition);
+
+  // The copy is comparative, so it needs something to compare against. Only gathered
+  // for the arm that actually sees titles — the other arms must not be told where they
+  // stand relative to friends, or the control is contaminated.
+  const context = view.showTitles ? await buildTitleContext(session.userId, start) : {};
+
+  const weekTitle = evaluateWeekTitle(result, audience, context);
   const progress = titleProgress(result, audience);
   const serializedWorkouts = workouts.map((w) => ({
     ...w,
     date: w.date.toISOString(),
   }));
 
+  // Record what the participant saw — score and title are logged even when hidden
+  // from this arm, since the analysis needs to compare "would have seen" vs "saw".
+  await recordEvent(session.userId, "DASHBOARD_VIEW", {
+    condition: user.condition,
+    score: result.score,
+    title: weekTitle.id,
+  });
+
   return (
     <>
-      <AppNav displayName={user.displayName} locale={audience.locale} />
+      <AppNav displayName={user.displayName} locale={audience.locale} showLeaderboard={view.showLeaderboard} />
       <main className="mx-auto max-w-5xl px-6 py-10 md:px-8">
         {audience.gender === null && <GenderPrompt locale={audience.locale} />}
         <section className="rise-in flex flex-col gap-8 rounded-2xl border border-coal-600 bg-coal-800 p-6 md:flex-row md:items-center md:gap-12 md:p-8">
-          <div className="flex flex-col items-center">
-            <ScoreGauge score={result.score} grade={result.grade} />
-          </div>
+          {view.showScore && (
+            <div className="flex flex-col items-center">
+              <ScoreGauge score={result.score} grade={result.grade} />
+            </div>
+          )}
           <div className="flex-1">
-            <p className="font-mono text-xs uppercase tracking-widest text-bone/50">{t(audience.locale, "score_label")}</p>
+            {view.showScore && (
+              <p className="font-mono text-xs uppercase tracking-widest text-bone/50">{t(audience.locale, "score_label")}</p>
+            )}
 
-            <div className="mt-5 max-w-md">
-              <WeekTitleBadge weekTitle={weekTitle} />
-              <TitleProgressBar progress={progress} locale={audience.locale} />
-            </div>
+            {view.showTitles && (
+              <div className="mt-5 max-w-md">
+                <WeekTitleBadge weekTitle={weekTitle} />
+                <TitleProgressBar progress={progress} locale={audience.locale} />
+              </div>
+            )}
 
-            <div className="mt-6 grid grid-cols-3 gap-4">
-              <StatBar label={t(audience.locale, "bar_volume")} value={result.volumePoints} max={70} />
-              <StatBar label={t(audience.locale, "bar_consistency")} value={result.consistencyPoints} max={20} />
-              <StatBar label={t(audience.locale, "bar_variety")} value={result.varietyPoints} max={10} />
-            </div>
+            {view.showScore && (
+              <>
+                <div className="mt-6 grid grid-cols-3 gap-4">
+                  <StatBar label={t(audience.locale, "bar_volume")} value={result.volumePoints} max={70} />
+                  <StatBar label={t(audience.locale, "bar_consistency")} value={result.consistencyPoints} max={20} />
+                  <StatBar label={t(audience.locale, "bar_variety")} value={result.varietyPoints} max={10} />
+                </div>
 
-            <div className="mt-6 flex flex-wrap gap-x-8 gap-y-2 border-t border-coal-600 pt-5">
-              <Stat label={t(audience.locale, "stat_active_days")} value={`${result.activeDays}/7`} />
-              <Stat label={t(audience.locale, "stat_total_minutes")} value={String(result.totalMinutes)} />
-              <Stat label={t(audience.locale, "stat_workouts")} value={String(result.workoutCount)} />
-              <Stat label={t(audience.locale, "stat_effort")} value={String(result.effort)} />
-              {result.hardest && (
-                <Stat
-                  label={t(audience.locale, "stat_hardest")}
-                  value={`${TIER_META[result.hardest.rating.tier].label} · ${result.hardest.rating.rating}`}
-                />
-              )}
-            </div>
+                <div className="mt-6 flex flex-wrap gap-x-8 gap-y-2 border-t border-coal-600 pt-5">
+                  <Stat label={t(audience.locale, "stat_active_days")} value={`${result.activeDays}/7`} />
+                  <Stat label={t(audience.locale, "stat_total_minutes")} value={String(result.totalMinutes)} />
+                  <Stat label={t(audience.locale, "stat_workouts")} value={String(result.workoutCount)} />
+                  <Stat label={t(audience.locale, "stat_effort")} value={String(result.effort)} />
+                  {result.hardest && (
+                    <Stat
+                      label={t(audience.locale, "stat_hardest")}
+                      value={`${TIER_META[result.hardest.rating.tier].label} · ${result.hardest.rating.rating}`}
+                    />
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </section>
 

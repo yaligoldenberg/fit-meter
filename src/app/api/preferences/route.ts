@@ -3,6 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { LOCALE_COOKIE } from "@/lib/i18n";
+import { getAudience } from "@/lib/audience";
+import { apiError } from "@/lib/apiErrors";
 
 const schema = z.object({
   locale: z.enum(["he", "en"]).optional(),
@@ -14,14 +16,16 @@ const schema = z.object({
  * can set lang/dir without a database round trip, including for logged-out pages.
  */
 export async function POST(req: NextRequest) {
+  const { locale: audienceLocale } = await getAudience();
+
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid preferences" }, { status: 400 });
+    return NextResponse.json({ error: apiError("invalid_preferences", audienceLocale) }, { status: 400 });
   }
   const { locale, gender } = parsed.data;
   if (!locale && !gender) {
-    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+    return NextResponse.json({ error: apiError("nothing_to_update", audienceLocale) }, { status: 400 });
   }
 
   const session = await getSession();
@@ -32,7 +36,7 @@ export async function POST(req: NextRequest) {
     });
   } else if (gender) {
     // Gender only means anything for a signed-in user.
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: apiError("unauthorized", audienceLocale) }, { status: 401 });
   }
 
   const res = NextResponse.json({ ok: true, locale, gender });

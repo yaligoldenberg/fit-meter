@@ -34,7 +34,13 @@ function weekdayMonthDayFormatter(locale: Locale) {
   });
 }
 
-export default async function HistoryPage() {
+const HISTORY_PAGE_SIZE = 50;
+
+export default async function HistoryPage({
+  searchParams,
+}: {
+  searchParams?: { page?: string };
+}) {
   const session = await getSession();
   if (!session) redirect("/login");
 
@@ -60,10 +66,18 @@ export default async function HistoryPage() {
   }
   const weeksMostRecentFirst = [...weeks].reverse();
 
+  const totalWorkouts = await prisma.workout.count({ where: { userId: session.userId } });
+  const totalPages = Math.max(1, Math.ceil(totalWorkouts / HISTORY_PAGE_SIZE));
+  const requestedPage = Number(searchParams?.page ?? "1");
+  const page = Number.isFinite(requestedPage)
+    ? Math.min(Math.max(1, Math.floor(requestedPage)), totalPages)
+    : 1;
+
   const allWorkouts = await prisma.workout.findMany({
     where: { userId: session.userId },
     orderBy: { date: "desc" },
-    take: 200,
+    skip: (page - 1) * HISTORY_PAGE_SIZE,
+    take: HISTORY_PAGE_SIZE,
   });
 
   const groups: { key: string; label: string; workouts: typeof allWorkouts }[] = [];
@@ -77,7 +91,7 @@ export default async function HistoryPage() {
     group.workouts.push(w);
   }
 
-  const hasHistory = allWorkouts.length > 0;
+  const hasHistory = totalWorkouts > 0;
 
   return (
     <div className="min-h-screen bg-coal-900">
@@ -211,6 +225,24 @@ export default async function HistoryPage() {
                   </div>
                 ))}
               </div>
+              {totalPages > 1 && (
+                <div className="mt-4 flex items-center justify-between font-mono text-xs uppercase tracking-widest">
+                  {page < totalPages ? (
+                    <a href={`/history?page=${page + 1}`} className="text-bone/60 hover:text-volt">
+                      {t(audience.locale, "history_older")}
+                    </a>
+                  ) : (
+                    <span />
+                  )}
+                  {page > 1 ? (
+                    <a href={`/history?page=${page - 1}`} className="text-bone/60 hover:text-volt">
+                      {t(audience.locale, "history_newer")}
+                    </a>
+                  ) : (
+                    <span />
+                  )}
+                </div>
+              )}
             </section>
           </>
         )}

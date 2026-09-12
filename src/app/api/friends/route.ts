@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { getAudience } from "@/lib/audience";
+import { apiError } from "@/lib/apiErrors";
 
 const userSelect = { id: true, username: true, displayName: true } as const;
 
 export async function GET() {
+  const { locale } = await getAudience();
   const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return NextResponse.json({ error: apiError("unauthorized", locale) }, { status: 401 });
 
   const relations = await prisma.friendship.findMany({
     where: { OR: [{ requesterId: session.userId }, { addresseeId: session.userId }] },
@@ -37,20 +40,21 @@ export async function GET() {
 const schema = z.object({ username: z.string().min(1) });
 
 export async function POST(req: NextRequest) {
+  const { locale } = await getAudience();
   const session = await getSession();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session) return NextResponse.json({ error: apiError("unauthorized", locale) }, { status: 401 });
 
   const body = await req.json().catch(() => null);
   const parsed = schema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Enter a username" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: apiError("username_missing", locale) }, { status: 400 });
 
   const targetUsername = parsed.data.username.toLowerCase().trim().replace(/^@/, "");
   if (targetUsername === session.username) {
-    return NextResponse.json({ error: "You can't add yourself" }, { status: 400 });
+    return NextResponse.json({ error: apiError("cannot_add_self", locale) }, { status: 400 });
   }
 
   const target = await prisma.user.findUnique({ where: { username: targetUsername } });
-  if (!target) return NextResponse.json({ error: "No user with that username" }, { status: 404 });
+  if (!target) return NextResponse.json({ error: apiError("no_such_user", locale) }, { status: 404 });
 
   const existing = await prisma.friendship.findFirst({
     where: {
@@ -63,10 +67,11 @@ export async function POST(req: NextRequest) {
 
   if (existing) {
     if (existing.status === "ACCEPTED") {
+      // No apiErrors key for this yet (need: already_friends) — kept in English, see report.
       return NextResponse.json({ error: "You're already friends" }, { status: 409 });
     }
     if (existing.requesterId === session.userId) {
-      return NextResponse.json({ error: "Request already sent" }, { status: 409 });
+      return NextResponse.json({ error: apiError("request_already_sent", locale) }, { status: 409 });
     }
     // They already requested us — auto-accept.
     const updated = await prisma.friendship.update({

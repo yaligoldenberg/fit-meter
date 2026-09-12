@@ -11,6 +11,7 @@ import {
   typeLabel,
   intensityLabel,
   intensityHint,
+  usesDistance,
 } from "@/lib/workoutTypes";
 import { Locale, t } from "@/lib/i18n";
 
@@ -51,7 +52,7 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
           type,
           duration: Number(duration),
           intensity,
-          distanceKm: distanceKm ? Number(distanceKm) : null,
+          distanceKm: usesDistance(type) && distanceKm ? Number(distanceKm) : null,
           note: note || undefined,
           date: new Date(date).toISOString(),
         }),
@@ -128,20 +129,22 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
             className="input"
           />
         </label>
-        <label className="flex flex-col gap-1.5">
-          <span className="font-mono text-xs uppercase tracking-widest text-bone/50">
-            {t(locale, "field_distance")}
-          </span>
-          <input
-            type="number"
-            min={0}
-            step="0.1"
-            placeholder={t(locale, "field_optional")}
-            value={distanceKm}
-            onChange={(e) => setDistanceKm(e.target.value)}
-            className="input"
-          />
-        </label>
+        {usesDistance(type) && (
+          <label className="flex flex-col gap-1.5">
+            <span className="font-mono text-xs uppercase tracking-widest text-bone/50">
+              {t(locale, "field_distance")}
+            </span>
+            <input
+              type="number"
+              min={0}
+              step="0.1"
+              placeholder={t(locale, "field_optional")}
+              value={distanceKm}
+              onChange={(e) => setDistanceKm(e.target.value)}
+              className="input"
+            />
+          </label>
+        )}
         <label className="flex flex-col gap-1.5">
           <span className="font-mono text-xs uppercase tracking-widest text-bone/50">{t(locale, "field_date")}</span>
           <input required type="date" value={date} onChange={(e) => setDate(e.target.value)} className="input" />

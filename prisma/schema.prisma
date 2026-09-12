@@ -17,11 +17,43 @@ model User {
   gender       String?
   // UI language: "he" (default, RTL) or "en".
   locale       String   @default("he")
+  // Experimental condition, assigned at registration and fixed for the study:
+  // TITLES = full social app, SCORE_ONLY = own score but no titles/leaderboard,
+  // LOG_ONLY = logging only. See src/lib/research.ts.
+  condition    String   @default("TITLES")
   createdAt    DateTime @default(now())
 
   workouts        Workout[]
+  events          Event[]
+  passwordResets  PasswordReset[]
   sentRequests    Friendship[] @relation("Requester")
   receivedRequests Friendship[] @relation("Addressee")
+}
+
+/// Research telemetry: what a participant SAW, which workouts alone can't tell us.
+model Event {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// DASHBOARD_VIEW | LEADERBOARD_VIEW | TITLE_CHANGE | WORKOUT_LOGGED
+  type      String
+  /// Small JSON blob of context, e.g. the title held at view time and the rank.
+  meta      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+}
+
+/// Single-use password reset, issued by a researcher — no mail provider needed.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 }
 
 model Workout {

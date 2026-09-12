@@ -110,22 +110,43 @@ export function gradeColor(grade: string): string {
 }
 
 /**
- * The rolling 7-day window ending with the reference day, as UTC [start, end).
+ * Time zone the study's days are measured in. Workout dates are calendar dates, so the
+ * window has to agree with the participant's calendar: in UTC, "today" would end at
+ * 02:00–03:00 Israeli time and a late-night session would land on the previous day,
+ * quietly distorting the consistency component of everyone's score.
+ */
+export const STUDY_TIME_ZONE = "Asia/Jerusalem";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The calendar date at `instant` in the study's time zone, as [year, month, day]. */
+function localDateParts(instant: Date): [number, number, number] {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: STUDY_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(instant);
+  const [y, m, d] = parts.split("-").map(Number);
+  return [y, m, d];
+}
+
+/**
+ * The rolling 7-day window ending with the reference day, as [start, end).
  *
  * Scores are always "the last 7 days" rather than "since Monday" — on a Wednesday you're
  * rated on Thursday through today, so the number never collapses at the week boundary and
  * everyone on the leaderboard is measured over the same length of time.
  *
+ * Boundaries are the UTC midnights that workout dates are stored at, but the day they
+ * belong to is decided in Israeli local time.
+ *
  * `offset` steps backwards in whole 7-day blocks: -1 is the week before this one.
  */
 export function trailingWindow(reference: Date, offset = 0): { start: Date; end: Date } {
-  const dayStart = Date.UTC(
-    reference.getUTCFullYear(),
-    reference.getUTCMonth(),
-    reference.getUTCDate()
-  );
-  const day = 24 * 60 * 60 * 1000;
-  const end = new Date(dayStart + day + offset * WINDOW_DAYS * day);
-  const start = new Date(end.getTime() - WINDOW_DAYS * day);
+  const [year, month, day] = localDateParts(reference);
+  const todayStart = Date.UTC(year, month - 1, day);
+  const end = new Date(todayStart + DAY_MS + offset * WINDOW_DAYS * DAY_MS);
+  const start = new Date(end.getTime() - WINDOW_DAYS * DAY_MS);
   return { start, end };
 }

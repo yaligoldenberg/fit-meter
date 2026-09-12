@@ -53,7 +53,7 @@ export type IntensityKey = "LOW" | "MEDIUM" | "HIGH";
 export const INTENSITIES: Record<IntensityKey, { label: string; labelHe: string; hint: string; hintHe: string }> = {
   LOW: { label: "Easy", labelHe: "קל", hint: "Could hold a full conversation", hintHe: "אפשר לנהל שיחה שלמה" },
   MEDIUM: { label: "Moderate", labelHe: "בינוני", hint: "Breathing hard, could talk in short sentences", hintHe: "נושמים חזק, מדברים במשפטים קצרים" },
-  HIGH: { label: "All-out", labelHe: "על הפנים", hint: "Max effort, couldn't say much", hintHe: "מאמץ מקסימלי, אין אוויר לדבר" },
+  HIGH: { label: "All-out", labelHe: "על מלא", hint: "Max effort, couldn't say much", hintHe: "מאמץ מקסימלי, אין אוויר לדבר" },
 };
 
 /** Order the picker shows — most commonly logged first. */
@@ -98,4 +98,22 @@ export function intensityLabel(key: IntensityKey, locale: "he" | "en"): string {
 export function intensityHint(key: IntensityKey, locale: "he" | "en"): string {
   const meta = INTENSITIES[key] ?? INTENSITIES.MEDIUM;
   return locale === "he" ? meta.hintHe : meta.hint;
+}
+
+/**
+ * Activities where a distance is meaningful — and where logged pace drives the MET
+ * rating in ./difficulty. Everything else (gym, yoga, tennis…) has no distance to give,
+ * so the form shouldn't ask for one.
+ */
+export const TYPES_WITH_DISTANCE: WorkoutTypeKey[] = [
+  "RUNNING",
+  "WALKING",
+  "CYCLING",
+  "SWIMMING",
+  "HIKING",
+  "ROWING",
+];
+
+export function usesDistance(key: WorkoutTypeKey): boolean {
+  return TYPES_WITH_DISTANCE.includes(key);
 }

@@ -12,9 +12,19 @@ const LINKS = [
   { href: "/friends", key: "nav_friends" },
 ] as const;
 
-export default function AppNav({ displayName, locale }: { displayName: string; locale: Locale }) {
+export default function AppNav({
+  displayName,
+  locale,
+  showLeaderboard = true,
+}: {
+  displayName: string;
+  locale: Locale;
+  /** Hide the Leaderboard link for study arms that must not reach it. Defaults to true. */
+  showLeaderboard?: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
+  const links = showLeaderboard ? LINKS : LINKS.filter((link) => link.href !== "/leaderboard");
 
   async function logout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -29,7 +39,7 @@ export default function AppNav({ displayName, locale }: { displayName: string; l
           FIT<span className="text-volt">METER</span>
         </Link>
         <nav className="hidden items-center gap-1 md:flex">
-          {LINKS.map((link) => {
+          {links.map((link) => {
             const active = pathname.startsWith(link.href);
             return (
               <Link
@@ -58,7 +68,7 @@ export default function AppNav({ displayName, locale }: { displayName: string; l
         </div>
       </div>
       <nav className="flex items-center gap-1 overflow-x-auto border-t border-coal-600 px-4 py-2 md:hidden">
-        {LINKS.map((link) => {
+        {links.map((link) => {
           const active = pathname.startsWith(link.href);
           return (
             <Link
