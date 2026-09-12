@@ -80,7 +80,7 @@ export default function AppNav({
               {displayName}
             </span>
             <span
-              className="block truncate font-mono text-[11px] text-bone/30"
+              className="block truncate font-mono text-xs text-bone/70"
               title={t(locale, "nav_your_username")}
             >
               @{username}
