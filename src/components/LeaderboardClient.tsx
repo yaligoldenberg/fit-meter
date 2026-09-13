@@ -81,32 +81,32 @@ export default function LeaderboardClient({
   }, [weekOffset, load]);
 
   return (
-    <div className="rise-in rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="font-display text-4xl uppercase text-bone">
+    <div className="rise-in sheet p-6 md:p-8">
+      <div className="flex items-baseline justify-between gap-3">
+        <h1 className="font-display text-5xl leading-none text-ink">
           {t(locale, groupId ? "groups_leaderboard" : "leaderboard_title")}
         </h1>
         {weekOffset === 0 && !loading && !error && (
-          <span className="rounded-full bg-volt/20 px-3 py-1 font-mono text-[10px] uppercase tracking-widest text-volt">
+          <span className="rounded-full border border-signal px-3 py-0.5 text-[11px] font-medium text-signal">
             {t(locale, "lb_last_7")}
           </span>
         )}
       </div>
 
-      <div className="mb-6 flex items-center justify-between border-b border-coal-600 pb-4">
+      <div className="mb-5 mt-6 flex items-center justify-between gap-3 border-b border-rule pb-4">
         <button
           onClick={() => setWeekOffset((o) => o - 1)}
-          className="rounded-full border border-coal-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bone/60 transition hover:border-bone/40 hover:text-bone"
+          className="text-sm text-slate underline-offset-4 transition-colors hover:text-ink hover:underline"
         >
           {t(locale, "lb_earlier")}
         </button>
-        <span className="font-mono text-xs uppercase tracking-widest text-bone/50">
+        <span className="text-[13px] font-medium text-slate num-tabular">
           {data ? formatWeekRange(data.weekStart, data.weekEnd, locale) : " "}
         </span>
         <button
           onClick={() => setWeekOffset((o) => Math.min(0, o + 1))}
           disabled={weekOffset === 0}
-          className="rounded-full border border-coal-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bone/60 transition hover:border-bone/40 hover:text-bone disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-coal-600 disabled:hover:text-bone/60"
+          className="text-sm text-slate underline-offset-4 transition-colors hover:text-ink hover:underline disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:no-underline"
         >
           {t(locale, "lb_later")}
         </button>
@@ -115,18 +115,15 @@ export default function LeaderboardClient({
       {loading && (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-16 animate-pulse rounded-xl bg-coal-700" />
+            <div key={i} className="h-16 animate-pulse bg-chalk" />
           ))}
         </div>
       )}
 
       {!loading && error && (
         <div className="flex flex-col items-center gap-3 py-10 text-center">
-          <p className="text-sm text-coral">{error}</p>
-          <button
-            onClick={() => load(weekOffset)}
-            className="rounded-full bg-volt px-5 py-2 text-sm font-bold text-coal-950 transition hover:bg-volt-400"
-          >
+          <p className="text-sm text-flag-red">{error}</p>
+          <button onClick={() => load(weekOffset)} className="btn-primary">
             {t(locale, "retry")}
           </button>
         </div>
@@ -134,15 +131,12 @@ export default function LeaderboardClient({
 
       {!loading && !error && data && data.leaderboard.length <= 1 && (
         <div className="flex flex-col items-center gap-2 py-14 text-center">
-          <p className="font-display text-2xl uppercase text-bone">{t(locale, "lb_alone")}</p>
-          <p className="max-w-xs text-sm text-bone/50">
+          <p className="font-display text-4xl leading-none text-ink">{t(locale, "lb_alone")}</p>
+          <p className="max-w-xs text-sm text-slate">
             {t(locale, groupId ? "groups_alone_hint" : "lb_alone_hint")}
           </p>
           {!groupId && (
-            <Link
-              href="/friends"
-              className="mt-3 rounded-full bg-volt px-5 py-2 text-sm font-bold text-coal-950 transition hover:bg-volt-400"
-            >
+            <Link href="/friends" className="btn-primary mt-3">
               {t(locale, "add_friends")}
             </Link>
           )}
@@ -150,7 +144,7 @@ export default function LeaderboardClient({
       )}
 
       {!loading && !error && data && data.leaderboard.length > 1 && (
-        <ul className="flex flex-col gap-2">
+        <ul className="divide-y divide-rule border-t border-rule">
           {data.leaderboard.map((row) => {
             const top3 = row.rank <= 3;
             const title = evaluateWeekTitle(row, {
@@ -160,42 +154,42 @@ export default function LeaderboardClient({
             return (
               <li
                 key={row.id}
-                className={`flex items-center gap-4 rounded-xl border px-4 py-3 transition ${
-                  row.isMe
-                    ? "border-volt/40 bg-coal-700"
-                    : top3
-                    ? "border-coal-500 bg-coal-700/60"
-                    : "border-transparent bg-coal-800"
+                className={`flex items-center gap-4 py-3.5 ${
+                  row.isMe ? "border-s-[3px] border-signal bg-chalk ps-3" : ""
                 }`}
               >
                 <span
-                  className={`w-8 shrink-0 text-center font-display text-3xl ${
-                    row.rank === 1 ? "text-volt" : "text-bone/30"
+                  className={`w-7 shrink-0 text-center font-display text-3xl leading-none num-tabular ${
+                    top3 ? "text-ink" : "text-slate-light"
                   }`}
                 >
                   {row.rank}
                 </span>
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-coal-600 font-mono text-sm font-semibold text-bone/80">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-rule text-[13px] font-semibold text-slate">
                   {initials(row.displayName)}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold text-bone">
+                  <p className="truncate font-semibold text-ink">
                     {row.displayName}
-                    {row.isMe && <span className="ms-1.5 font-normal text-bone/40">{t(locale, "you_marker")}</span>}
+                    {row.isMe && (
+                      <span className="ms-1.5 font-normal text-slate-light">{t(locale, "you_marker")}</span>
+                    )}
                   </p>
-                  <p className={`truncate text-[11px] font-semibold ${tierColor(title.tier)}`}>
+                  <p className={`truncate text-[13px] font-semibold ${tierColor(title.tier)}`}>
                     {title.emoji} {title.title}
                   </p>
-                  <p className="font-mono text-[11px] uppercase tracking-wide text-bone/40">
+                  <p className="text-[13px] text-slate-light">
                     {tn(locale, "lb_days", row.activeDays)} · {tn(locale, "lb_workouts", row.workoutCount)}
                   </p>
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className={`font-display text-3xl ${gradeColor(row.grade)}`}>{row.grade}</span>
-                    <span className="num-tabular w-10 text-end font-mono text-sm text-bone/60">{row.score}</span>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <div className="flex items-baseline gap-2">
+                    <span className={`font-display text-3xl leading-none ${gradeColor(row.grade)}`}>
+                      {row.grade}
+                    </span>
+                    <span className="num-tabular w-8 text-end text-sm text-slate">{row.score}</span>
                   </div>
-                  <span className="num-tabular font-mono text-[10px] uppercase tracking-wide text-bone/40">
+                  <span className="num-tabular text-[13px] text-slate-light">
                     {row.effort} {t(locale, "lb_effort")}
                   </span>
                 </div>

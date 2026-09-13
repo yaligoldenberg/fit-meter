@@ -141,11 +141,11 @@ const TIER_CUTOFFS: [DifficultyTier, number][] = [
 ];
 
 export const TIER_META: Record<DifficultyTier, { label: string; className: string }> = {
-  LIGHT: { label: "Light", className: "border-coal-600 text-bone/50" },
-  MODERATE: { label: "Moderate", className: "border-bone/30 text-bone/80" },
-  HARD: { label: "Hard", className: "border-volt/40 text-volt" },
-  BRUTAL: { label: "Brutal", className: "border-coral/50 text-coral" },
-  EPIC: { label: "Epic", className: "border-coral text-coral" },
+  LIGHT: { label: "Light", className: "border-rule text-slate-light" },
+  MODERATE: { label: "Moderate", className: "border-rule text-slate" },
+  HARD: { label: "Hard", className: "border-ink/30 text-ink" },
+  BRUTAL: { label: "Brutal", className: "border-flag-red/40 text-flag-red" },
+  EPIC: { label: "Epic", className: "border-flag-red text-flag-red" },
 };
 
 function interpolate(points: [number, number][], x: number): number {

@@ -16,10 +16,10 @@ export default function ResetForm({ token, locale }: { token: string; locale: Lo
   if (!token) {
     return (
       <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
-        <Link href="/" className="mb-10 font-display text-2xl tracking-wide text-bone">
-          FIT<span className="text-volt">METER</span>
+        <Link href="/" className="mb-10 font-display text-2xl tracking-wide text-ink">
+          FIT<span className="text-signal">METER</span>
         </Link>
-        <p className="rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral">{apiError("reset_invalid", locale)}</p>
+        <p className="border-s-[3px] border-flag-red bg-chalk px-3 py-2 text-sm text-flag-red">{apiError("reset_invalid", locale)}</p>
       </div>
     );
   }
@@ -54,11 +54,11 @@ export default function ResetForm({ token, locale }: { token: string; locale: Lo
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
-      <Link href="/" className="mb-10 font-display text-2xl tracking-wide text-bone">
-        FIT<span className="text-volt">METER</span>
+      <Link href="/" className="mb-10 font-display text-2xl tracking-wide text-ink">
+        FIT<span className="text-signal">METER</span>
       </Link>
-      <h1 className="font-display text-4xl text-bone">{t(locale, "reset_heading").toUpperCase()}</h1>
-      <p className="mt-2 text-sm text-bone/60">{t(locale, "reset_sub")}</p>
+      <h1 className="font-display text-4xl text-ink">{t(locale, "reset_heading")}</h1>
+      <p className="mt-2 text-sm text-slate">{t(locale, "reset_sub")}</p>
 
       <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-4">
         <Field label={t(locale, "field_new_password")}>
@@ -84,12 +84,12 @@ export default function ResetForm({ token, locale }: { token: string; locale: Lo
           />
         </Field>
 
-        {error && <p className="rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p>}
+        {error && <p className="border-s-[3px] border-flag-red bg-chalk px-3 py-2 text-sm text-flag-red">{error}</p>}
 
         <button
           type="submit"
           disabled={loading}
-          className="mt-2 rounded-full bg-volt px-6 py-3 font-bold text-coal-950 transition hover:bg-volt-400 disabled:opacity-50"
+          className="mt-2 btn-primary py-3 text-base"
         >
           {loading ? t(locale, "auth_wait") : t(locale, "reset_submit")}
         </button>
@@ -101,7 +101,7 @@ export default function ResetForm({ token, locale }: { token: string; locale: Lo
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="font-mono text-xs uppercase tracking-widest text-bone/50">{label}</span>
+      <span className="caption">{label}</span>
       {children}
     </label>
   );

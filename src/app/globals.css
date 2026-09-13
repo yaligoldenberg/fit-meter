@@ -2,56 +2,196 @@
 @tailwind components;
 @tailwind utilities;
 
-::selection {
-  background: #d7ff3f;
-  color: #08090a;
+/* Channel triplets, so Tailwind's `/40` opacity modifiers still work on every token. */
+:root {
+  color-scheme: light;
+
+  --c-canvas: 255 255 255;
+  --c-paper: 255 255 255;
+
+  --c-ink: 10 10 10;
+  --c-ink-800: 22 22 22;
+  --c-ink-700: 36 36 36;
+  --c-ink-600: 58 58 58;
+
+  --c-chalk: 245 246 247;
+  --c-chalk-50: 250 251 251;
+  --c-chalk-200: 235 237 239;
+  --c-chalk-300: 215 218 222;
+
+  --c-rule: 227 229 232;
+  --c-rule-dark: 42 42 42;
+
+  --c-slate: 90 95 106;
+  --c-slate-light: 138 144 155;
+
+  --c-signal: 0 168 93;
+  --c-signal-700: 0 122 68;
+  --c-signal-400: 47 210 127;
+  --c-signal-50: 232 248 240;
+
+  --c-flag-red: 217 48 37;
+  --c-flag-amber: 178 94 2;
+
+  /* The one deliberately inverted band. */
+  --inv-bg: 10 10 10;
+  --inv-fg: 255 255 255;
+  --inv-surface: 22 22 22;
+  --inv-surface-2: 36 36 36;
+  --inv-rule: 42 42 42;
+  --inv-muted: 138 144 155;
+  --inv-signal: 47 210 127;
 }
 
-html {
+.dark {
   color-scheme: dark;
+
+  /* The page sits below the cards, so surfaces read as lifted rather than outlined. */
+  --c-canvas: 10 10 10;
+  --c-paper: 21 21 21;
+
+  /* Ink is now the light end: it is text, but also the filled-button background. */
+  --c-ink: 242 242 242;
+  --c-ink-800: 229 229 229;
+  --c-ink-700: 212 212 212;
+  --c-ink-600: 163 163 163;
+
+  --c-chalk: 17 17 17;
+  --c-chalk-50: 24 24 24;
+  --c-chalk-200: 42 42 42;
+  --c-chalk-300: 58 58 58;
+
+  --c-rule: 40 40 40;
+  --c-rule-dark: 51 51 51;
+
+  --c-slate: 154 160 171;
+  --c-slate-light: 110 117 128;
+
+  /* Lifted so it still reads as a signal against near-black. */
+  --c-signal: 34 199 122;
+  --c-signal-700: 26 168 102;
+  --c-signal-400: 74 222 155;
+  --c-signal-50: 16 38 28;
+
+  --c-flag-red: 248 113 113;
+  --c-flag-amber: 217 160 60;
+
+  /* Inverting to white would be violent here, so the band lifts instead. */
+  --inv-bg: 28 28 28;
+  --inv-fg: 242 242 242;
+  --inv-surface: 36 36 36;
+  --inv-surface-2: 48 48 48;
+  --inv-rule: 58 58 58;
+  --inv-muted: 150 156 166;
+  --inv-signal: 74 222 155;
+}
+
+::selection {
+  background: rgb(var(--c-signal));
+  color: rgb(var(--c-canvas));
 }
 
 body {
-  background-color: #0d0f0e;
-  color: #f3f1e7;
+  background-color: rgb(var(--c-canvas));
+  color: rgb(var(--c-ink));
 }
 
-.bg-noise {
-  position: relative;
-}
-.bg-noise::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
-  mix-blend-mode: overlay;
+:focus-visible {
+  outline: 2px solid rgb(var(--c-ink));
+  outline-offset: 2px;
 }
 
 .num-tabular {
   font-variant-numeric: tabular-nums;
 }
 
-.input {
-  border-radius: 0.75rem;
-  border: 1px solid #272e29;
-  background-color: #141715;
-  padding: 0.75rem 1rem;
-  color: #f3f1e7;
-  outline: none;
-  transition: border-color 0.15s ease;
+/* Headlines are the loudest thing on the page: heavy, set tight, never tracked open. */
+.font-display {
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
-.input::placeholder {
-  color: rgba(243, 241, 231, 0.3);
-}
-.input:focus {
-  border-color: #d7ff3f;
+
+@layer components {
+  /* A hairline box. Flat, square-ish — boxes butt against each other to build a
+     lattice rather than float as separate cards. */
+  .sheet {
+    @apply rounded-sheet border border-rule bg-paper;
+  }
+
+  .caption {
+    @apply text-[11px] font-semibold uppercase leading-none tracking-[0.12em] text-slate;
+  }
+
+  .readout {
+    @apply font-display text-[2.75rem] leading-[0.9] num-tabular;
+  }
+
+  .input {
+    @apply w-full rounded-sheet border border-rule bg-paper px-3.5 py-2.5 text-ink
+           outline-none transition-colors placeholder:text-slate-light
+           focus:border-ink focus:ring-1 focus:ring-ink;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center rounded-sheet px-5 py-2.5
+           text-sm font-semibold transition-colors disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply btn bg-ink text-canvas hover:bg-ink-700;
+  }
+  .btn-quiet {
+    @apply btn border border-rule bg-paper text-ink hover:border-ink;
+  }
+  .btn-signal {
+    @apply btn bg-signal text-white hover:bg-signal-700;
+  }
+
+  .chip {
+    @apply rounded-sheet border border-rule bg-paper px-3.5 py-1.5 text-sm
+           font-medium text-slate transition-colors hover:border-ink hover:text-ink;
+  }
+  .chip-on {
+    @apply border-ink bg-ink text-canvas hover:border-ink hover:text-canvas;
+  }
+
+  .meter {
+    @apply h-1.5 w-full overflow-hidden rounded-full bg-chalk-200;
+  }
+  .meter > * {
+    @apply h-full rounded-full bg-signal;
+  }
+
+  .lattice {
+    @apply grid border-s border-t border-rule;
+  }
+  .lattice > * {
+    @apply border-b border-e border-rule p-7;
+  }
+
+  /* Inverted section. Rather than hardcoding light-on-dark, it rebinds the tokens for
+     its subtree, so the utilities inside it need no dark: variants of their own. */
+  .invert-field {
+    background-color: rgb(var(--inv-bg));
+    color: rgb(var(--inv-fg));
+
+    --c-canvas: var(--inv-bg);
+    --c-paper: var(--inv-fg);
+    --c-ink: var(--inv-fg);
+    --c-ink-800: var(--inv-surface);
+    --c-ink-700: var(--inv-surface-2);
+    --c-rule: var(--inv-rule);
+    --c-rule-dark: var(--inv-rule);
+    --c-slate: var(--inv-muted);
+    --c-slate-light: var(--inv-muted);
+    --c-signal: var(--inv-signal);
+    --c-signal-400: var(--inv-signal);
+  }
 }
 
 @keyframes rise-in {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -59,7 +199,7 @@ body {
   }
 }
 .rise-in {
-  animation: rise-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: rise-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @keyframes dial-sweep {
@@ -71,22 +211,13 @@ body {
   }
 }
 .dial-sweep {
-  animation: dial-sweep 1.1s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: 0.15s;
+  animation: dial-sweep 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: 0.1s;
 }
 
-@keyframes marquee {
-  from {
-    transform: translateX(0);
+@media (prefers-reduced-motion: reduce) {
+  .rise-in,
+  .dial-sweep {
+    animation: none;
   }
-  to {
-    transform: translateX(-50%);
-  }
-}
-.marquee-track {
-  animation: marquee 22s linear infinite;
-}
-
-.diagonal-clip {
-  clip-path: polygon(0 0, 100% 0, 100% 88%, 0 100%);
 }

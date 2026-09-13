@@ -68,30 +68,30 @@ export interface TitleContext {
 export function tierColor(tier: TitleTier): string {
   switch (tier) {
     case "LEGEND":
-      return "text-volt";
+      return "text-signal";
     case "STRONG":
-      return "text-volt";
+      return "text-ink";
     case "SOLID":
-      return "text-bone";
+      return "text-ink";
     case "LIGHT":
-      return "text-bone/70";
+      return "text-slate";
     case "RESET":
-      return "text-coral/80";
+      return "text-flag-red";
   }
 }
 
 export function tierBorder(tier: TitleTier): string {
   switch (tier) {
     case "LEGEND":
-      return "border-volt/50 shadow-[0_0_30px_rgba(215,255,63,0.15)]";
+      return "border-signal";
     case "STRONG":
-      return "border-volt/30";
+      return "border-ink/40";
     case "SOLID":
-      return "border-coal-600";
+      return "border-rule";
     case "LIGHT":
-      return "border-coal-600";
+      return "border-rule";
     case "RESET":
-      return "border-coral/20";
+      return "border-flag-red/40";
   }
 }
 

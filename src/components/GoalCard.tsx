@@ -52,12 +52,10 @@ export default function GoalCard({
   if (editing || !progress) {
     const limits = GOAL_LIMITS[type];
     return (
-      <div className="rounded-xl border border-coal-600 bg-coal-800 px-5 py-4">
-        <p className="font-mono text-xs uppercase tracking-widest text-bone/50">
-          {t(locale, "goal_heading")}
-        </p>
+      <div className="sheet px-5 py-4">
+        <p className="caption">{t(locale, "goal_heading")}</p>
         {!progress && !editing && (
-          <p className="mt-2 text-sm text-bone/50">{t(locale, "goal_none")}</p>
+          <p className="mt-2 text-sm text-slate">{t(locale, "goal_none")}</p>
         )}
 
         {(editing || !progress) && (
@@ -69,11 +67,7 @@ export default function GoalCard({
                   type="button"
                   onClick={() => chooseType(option)}
                   aria-pressed={type === option}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
-                    type === option
-                      ? "border-volt bg-volt text-coal-950"
-                      : "border-coal-600 bg-coal-900 text-bone/70 hover:border-bone/40"
-                  }`}
+                  className={`chip ${type === option ? "chip-on" : ""}`}
                 >
                   {t(locale, `goal_type_${option}` as StringKey)}
                 </button>
@@ -88,13 +82,13 @@ export default function GoalCard({
                 step={limits.step}
                 value={value}
                 onChange={(e) => setValue(Number(e.target.value))}
-                className="input w-28"
+                className="input w-24"
               />
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => save(type, value)}
-                className="rounded-full bg-volt px-5 py-2 text-sm font-bold text-coal-950 transition hover:bg-volt-400 disabled:opacity-50"
+                className="btn-primary"
               >
                 {t(locale, "goal_save")}
               </button>
@@ -103,13 +97,13 @@ export default function GoalCard({
                   type="button"
                   disabled={busy}
                   onClick={() => save(null, null)}
-                  className="text-xs text-bone/40 underline-offset-4 transition hover:text-coral hover:underline"
+                  className="text-[13px] text-slate underline-offset-4 transition-colors hover:text-flag-red hover:underline"
                 >
                   {t(locale, "goal_clear")}
                 </button>
               )}
             </div>
-            {error && <p className="mt-2 text-xs text-coral">{error}</p>}
+            {error && <p className="mt-2 text-[13px] text-flag-red">{error}</p>}
           </>
         )}
       </div>
@@ -117,41 +111,33 @@ export default function GoalCard({
   }
 
   return (
-    <div
-      className={`rounded-xl border px-5 py-4 ${
-        progress.met ? "border-volt/40 bg-coal-700" : "border-coal-600 bg-coal-800"
-      }`}
-    >
+    <div className={`sheet px-5 py-4 ${progress.met ? "border-signal" : ""}`}>
       <div className="flex items-baseline justify-between gap-3">
-        <p className="font-mono text-xs uppercase tracking-widest text-bone/50">
-          {t(locale, "goal_heading")}
-        </p>
+        <p className="caption">{t(locale, "goal_heading")}</p>
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="font-mono text-xs text-bone/40 transition hover:text-bone"
+          className="text-[13px] text-slate underline-offset-4 transition-colors hover:text-ink hover:underline"
         >
           {t(locale, "goal_edit")}
         </button>
       </div>
 
-      <p className="mt-2 font-display text-xl tracking-wide text-bone num-tabular">
+      <p className="mt-2 font-display text-3xl leading-none text-ink num-tabular">
         {progress.current} / {progress.target}{" "}
-        <span className="font-body text-sm font-normal text-bone/50">
+        <span className="font-body text-sm font-normal text-slate">
           {t(locale, `goal_type_${progress.type}` as StringKey)}
         </span>
       </p>
 
-      <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-coal-900">
+      <div className="meter mt-3">
         <div
-          className={`h-full rounded-full transition-all duration-700 ${
-            progress.met ? "bg-volt" : "bg-bone/60"
-          }`}
+          className={`h-full transition-all duration-700 ${progress.met ? "bg-flag-green" : "bg-signal"}`}
           style={{ width: `${Math.max(3, progress.percent)}%` }}
         />
       </div>
 
-      <p className="mt-2 text-xs text-bone/50">
+      <p className="mt-2 text-[13px] text-slate">
         {progress.met ? t(locale, "goal_met") : tn(locale, "goal_remaining", progress.remaining)}
       </p>
     </div>

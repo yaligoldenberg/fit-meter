@@ -101,17 +101,17 @@ export function gradeFor(score: number): string {
 export function gradeColor(grade: string): string {
   switch (grade) {
     case "S":
-      return "text-volt";
+      return "text-signal";
     case "A":
-      return "text-volt";
+      return "text-ink";
     case "B":
-      return "text-bone";
+      return "text-ink";
     case "C":
-      return "text-bone";
+      return "text-slate";
     case "D":
-      return "text-coral";
+      return "text-flag-red";
     default:
-      return "text-coral";
+      return "text-flag-red";
   }
 }
 

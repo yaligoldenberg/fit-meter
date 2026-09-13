@@ -22,17 +22,21 @@ export default function RecordsCard({
 
   if (!hardestSession && !longestSession && furthestByType.length === 0) {
     return (
-      <div className="rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
-        <h2 className="font-display text-2xl text-bone">{t(locale, "records_heading").toUpperCase()}</h2>
-        <p className="mt-3 text-sm text-bone/50">{t(locale, "records_none")}</p>
+      <div className="sheet p-6 md:p-9">
+        <h2 className="font-display text-3xl leading-none text-ink">
+          {t(locale, "records_heading")}
+        </h2>
+        <p className="mt-3 text-sm text-slate">{t(locale, "records_none")}</p>
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
-      <h2 className="font-display text-2xl text-bone">{t(locale, "records_heading").toUpperCase()}</h2>
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+    <div className="sheet p-6 md:p-9">
+      <h2 className="font-display text-3xl leading-none text-ink">
+        {t(locale, "records_heading")}
+      </h2>
+      <div className="mt-6 grid gap-x-8 gap-y-5 sm:grid-cols-2">
         {hardestSession && (
           <Record
             label={t(locale, "record_hardest")}
@@ -75,12 +79,12 @@ function Record({
   icon: string;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-coal-600 bg-coal-900 px-4 py-3">
-      <span className="text-lg text-volt">{icon}</span>
+    <div className="flex items-start gap-3 border-t border-rule pt-4">
+      <span className="text-lg text-slate-light">{icon}</span>
       <div className="min-w-0">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-bone/40">{label}</p>
-        <p className="font-display text-lg text-bone num-tabular">{value}</p>
-        <p className="truncate text-xs text-bone/40">{meta}</p>
+        <p className="caption">{label}</p>
+        <p className="mt-2 font-display text-2xl leading-none text-ink num-tabular">{value}</p>
+        <p className="mt-1.5 truncate text-[13px] text-slate-light">{meta}</p>
       </div>
     </div>
   );

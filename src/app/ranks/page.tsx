@@ -58,10 +58,10 @@ export default async function RanksPage() {
       />
       <main className="mx-auto max-w-4xl px-6 py-10 md:px-8">
         <header className="rise-in">
-          <h1 className="font-display text-4xl text-bone md:text-5xl">
-            {t(audience.locale, "ranks_heading").toUpperCase()}
+          <h1 className="font-display text-5xl leading-none text-ink md:text-6xl">
+            {t(audience.locale, "ranks_heading")}
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-bone/60">
+          <p className="mt-3 max-w-[60ch] text-[15px] leading-relaxed text-slate">
             {t(audience.locale, "ranks_sub")}
           </p>
         </header>
@@ -77,7 +77,7 @@ export default async function RanksPage() {
           />
         </section>
 
-        <p className="mt-5 rounded-xl border border-coal-600 bg-coal-800 px-4 py-3 text-xs leading-relaxed text-bone/50">
+        <p className="mt-5 border-s-[3px] border-rule bg-chalk px-4 py-3 text-[13px] leading-relaxed text-slate">
           {t(audience.locale, "ranks_both_forms_note")}
         </p>
 
@@ -98,9 +98,9 @@ export default async function RanksPage() {
 
 function Summary({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-coal-600 bg-coal-800 px-5 py-3">
-      <p className="font-mono text-[10px] uppercase tracking-widest text-bone/40">{label}</p>
-      <p className="mt-1 font-display text-2xl text-bone num-tabular">{value}</p>
+    <div className="sheet px-5 py-3.5">
+      <p className="caption">{label}</p>
+      <p className="mt-2 font-display text-3xl leading-none text-ink num-tabular">{value}</p>
     </div>
   );
 }

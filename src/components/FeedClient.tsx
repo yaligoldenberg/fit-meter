@@ -151,16 +151,16 @@ export default function FeedClient({ locale, meId }: { locale: Locale; meId: str
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-3xl text-bone md:text-4xl">{t(locale, "feed_heading")}</h1>
+      <h1 className="font-display text-5xl leading-none text-ink md:text-6xl">{t(locale, "feed_heading")}</h1>
 
-      {loading && <p className="font-mono text-sm text-bone/40">{t(locale, "loading_ellipsis")}</p>}
+      {loading && <p className="text-sm text-slate-light">{t(locale, "loading_ellipsis")}</p>}
 
       {!loading && error && (
-        <div className="rounded-2xl border border-coal-600 bg-coal-800 p-6 text-center">
-          <p className="text-sm text-coral">{error}</p>
+        <div className="sheet p-6 text-center">
+          <p className="text-sm text-flag-red">{error}</p>
           <button
             onClick={() => load()}
-            className="mt-3 rounded-full border border-coal-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bone/60 transition hover:border-bone/40 hover:text-bone"
+            className="mt-3 btn-quiet"
           >
             {t(locale, "retry")}
           </button>
@@ -168,14 +168,14 @@ export default function FeedClient({ locale, meId }: { locale: Locale; meId: str
       )}
 
       {!loading && !error && items.length === 0 && (
-        <div className="rounded-2xl border border-coal-600 bg-coal-800 p-8 text-center">
-          <p className="text-sm text-bone/50">{t(locale, "feed_empty")}</p>
+        <div className="sheet p-8 text-center">
+          <p className="text-sm text-slate">{t(locale, "feed_empty")}</p>
         </div>
       )}
 
       {!loading && !error && items.length > 0 && (
         <>
-          <ul className="flex flex-col divide-y divide-coal-600 rounded-2xl border border-coal-600 bg-coal-800 px-4">
+          <ul className="flex flex-col divide-y divide-rule sheet px-4">
             {items.map((item) => {
               const isMe = !!item.user?.id && item.user.id === meId;
               const typeKey = ((item.type && item.type in WORKOUT_TYPES ? item.type : "OTHER") as WorkoutTypeKey);
@@ -189,32 +189,32 @@ export default function FeedClient({ locale, meId }: { locale: Locale; meId: str
 
               return (
                 <li key={item.id} className="flex gap-3 py-4">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-coal-600 font-mono text-xs font-semibold text-bone/80">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-rule text-[13px] font-semibold text-slate">
                     {isMe ? t(locale, "feed_you").slice(0, 2).toUpperCase() : initials(name)}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-                      <p className="truncate font-semibold text-bone">{displayName}</p>
-                      <span className="shrink-0 font-mono text-[11px] text-bone/40">
+                      <p className="truncate font-semibold text-ink">{displayName}</p>
+                      <span className="shrink-0 text-[11px] text-slate-light">
                         {relativeDate(item.date, locale)}
                       </span>
                     </div>
 
                     <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <span className="text-base text-volt">{meta.icon}</span>
-                      <span className="text-sm text-bone">{typeLabel(typeKey, locale)}</span>
-                      <span className="num-tabular font-mono text-xs text-bone/50">
+                      <span className="text-base text-slate-light">{meta.icon}</span>
+                      <span className="text-sm text-ink">{typeLabel(typeKey, locale)}</span>
+                      <span className="num-tabular text-[13px] text-slate">
                         {item.duration}
                         {t(locale, "unit_min")}
                       </span>
                       {typeof item.distanceKm === "number" && item.distanceKm > 0 && (
-                        <span className="num-tabular font-mono text-xs text-bone/50">
+                        <span className="num-tabular text-[13px] text-slate">
                           {item.distanceKm} {t(locale, "unit_km")}
                         </span>
                       )}
                       {tierKey && tierMeta && (
                         <span
-                          className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest ${tierMeta.className}`}
+                          className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${tierMeta.className}`}
                         >
                           {t(locale, `difficulty_${tierKey}` as StringKey)}
                           {typeof item.rating?.rating === "number" ? ` · ${item.rating.rating}` : ""}
@@ -222,7 +222,7 @@ export default function FeedClient({ locale, meId }: { locale: Locale; meId: str
                       )}
                     </div>
 
-                    {item.note && <p className="mt-1 truncate text-sm text-bone/50">{item.note}</p>}
+                    {item.note && <p className="mt-1 truncate text-sm text-slate">{item.note}</p>}
 
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       {EMOJIS.map((emoji) => {
@@ -236,8 +236,8 @@ export default function FeedClient({ locale, meId }: { locale: Locale; meId: str
                             onClick={() => toggleReaction(item, emoji)}
                             className={`rounded-full border px-2 py-1 text-sm transition ${
                               active
-                                ? "border-volt/60 bg-volt/10"
-                                : "border-coal-600 opacity-60 hover:border-bone/30 hover:opacity-100"
+                                ? "border-signal/60 bg-signal-50"
+                                : "border-rule opacity-60 hover:border-rule hover:opacity-100"
                             }`}
                           >
                             {emoji}
@@ -245,7 +245,7 @@ export default function FeedClient({ locale, meId }: { locale: Locale; meId: str
                         );
                       })}
                       {(item.reactionCount ?? 0) > 0 && (
-                        <span className="ms-1 num-tabular font-mono text-xs text-bone/40">
+                        <span className="ms-1 num-tabular text-[13px] text-slate-light">
                           {emojiSet.length > 0 ? `${emojiSet.join(" ")} ` : ""}
                           {tn(locale, "kudos_count", item.reactionCount ?? 0)}
                         </span>
@@ -263,7 +263,7 @@ export default function FeedClient({ locale, meId }: { locale: Locale; meId: str
             <button
               onClick={() => load(nextCursor)}
               disabled={loadingMore}
-              className="self-center rounded-full border border-coal-600 px-5 py-2 text-xs font-semibold uppercase tracking-widest text-bone/60 transition hover:border-bone/40 hover:text-bone disabled:opacity-50"
+              className="self-center rounded-full border border-rule px-5 py-2 text-xs font-semibold text-slate transition hover:border-slate hover:text-ink disabled:opacity-50"
             >
               {loadingMore ? t(locale, "loading_ellipsis") : t(locale, "more")}
             </button>

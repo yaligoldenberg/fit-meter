@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { Anton, Manrope, IBM_Plex_Mono, Heebo } from "next/font/google";
+import { Rubik } from "next/font/google";
 import { LOCALE_COOKIE, DEFAULT_LOCALE, isLocale, dirFor } from "@/lib/i18n";
+import { THEME_COOKIE, THEME_BOOTSTRAP, isTheme } from "@/lib/theme";
 import "./globals.css";
 
-const anton = Anton({ subsets: ["latin"], weight: "400", variable: "--font-anton" });
-const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
-const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex-mono" });
-// Hebrew face — Manrope and Anton have no Hebrew glyphs.
-const heebo = Heebo({ subsets: ["hebrew", "latin"], variable: "--font-heebo" });
+// One grotesk for headline and body, Hebrew and Latin, so nothing falls back mid-line.
+const rubik = Rubik({ subsets: ["hebrew", "latin"], variable: "--font-rubik" });
 
 export const metadata: Metadata = {
   title: "FitMeter — Your Week, Scored",
@@ -16,16 +14,23 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const cookieLocale = (await cookies()).get(LOCALE_COOKIE)?.value;
+  const jar = await cookies();
+  const cookieLocale = jar.get(LOCALE_COOKIE)?.value;
   const locale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
+  const cookieTheme = jar.get(THEME_COOKIE)?.value;
 
   return (
     <html
       lang={locale}
       dir={dirFor(locale)}
-      className={`${anton.variable} ${manrope.variable} ${plexMono.variable} ${heebo.variable}`}
+      // The bootstrap script may add `dark` before React hydrates.
+      suppressHydrationWarning
+      className={`${rubik.variable} ${isTheme(cookieTheme) && cookieTheme === "dark" ? "dark" : ""}`}
     >
-      <body className="font-body bg-coal-900 text-bone antialiased">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
+      </head>
+      <body className="bg-canvas font-body text-ink antialiased">{children}</body>
     </html>
   );
 }

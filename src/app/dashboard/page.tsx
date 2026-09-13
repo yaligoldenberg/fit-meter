@@ -160,7 +160,7 @@ export default async function DashboardPage() {
       <main className="mx-auto max-w-5xl px-6 py-10 md:px-8">
         {audience.gender === null && <GenderPrompt locale={audience.locale} />}
         {view.showScore && (
-          <div className="mb-6 grid gap-4 md:grid-cols-2">
+          <div className="mb-5 grid gap-4 md:grid-cols-2">
             <StreakBadge streak={streak} locale={audience.locale} />
             <GoalCard progress={goal} locale={audience.locale} />
           </div>
@@ -168,19 +168,16 @@ export default async function DashboardPage() {
         {/* Every child here is gated, so for LOG_ONLY the whole panel would otherwise
             render as an empty bordered box that reads as a broken page. */}
         {(view.showScore || view.showTitles) && (
-        <section className="rise-in flex flex-col gap-8 rounded-2xl border border-coal-600 bg-coal-800 p-6 md:flex-row md:items-center md:gap-12 md:p-8">
+        <section className="rise-in sheet flex flex-col gap-8 p-6 md:flex-row md:items-center md:gap-12 md:p-9">
           {view.showScore && (
             <div className="flex flex-col items-center">
               <ScoreGauge score={result.score} grade={result.grade} />
+              <p className="caption mt-4">{t(audience.locale, "score_label")}</p>
             </div>
           )}
           <div className="flex-1">
-            {view.showScore && (
-              <p className="font-mono text-xs uppercase tracking-widest text-bone/50">{t(audience.locale, "score_label")}</p>
-            )}
-
             {view.showTitles && (
-              <div className="mt-5 max-w-md">
+              <div className="max-w-md">
                 <WeekTitleBadge weekTitle={weekTitle} />
                 <TitleProgressBar progress={progress} locale={audience.locale} />
               </div>
@@ -188,13 +185,13 @@ export default async function DashboardPage() {
 
             {view.showScore && (
               <>
-                <div className="mt-6 grid grid-cols-3 gap-4">
+                <div className={`grid grid-cols-3 gap-5 ${view.showTitles ? "mt-7" : ""}`}>
                   <StatBar label={t(audience.locale, "bar_volume")} value={result.volumePoints} max={70} />
                   <StatBar label={t(audience.locale, "bar_consistency")} value={result.consistencyPoints} max={20} />
                   <StatBar label={t(audience.locale, "bar_variety")} value={result.varietyPoints} max={10} />
                 </div>
 
-                <div className="mt-6 flex flex-wrap gap-x-8 gap-y-2 border-t border-coal-600 pt-5">
+                <div className="mt-6 flex flex-wrap gap-x-9 gap-y-4 border-t border-rule pt-5">
                   <Stat label={t(audience.locale, "stat_active_days")} value={`${result.activeDays}/7`} />
                   <Stat label={t(audience.locale, "stat_total_minutes")} value={String(result.totalMinutes)} />
                   <Stat label={t(audience.locale, "stat_workouts")} value={String(result.workoutCount)} />
@@ -212,22 +209,26 @@ export default async function DashboardPage() {
         </section>
         )}
 
-        <section className="mt-8 rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
-          <h2 className="font-display text-2xl text-bone">{t(audience.locale, "log_workout").toUpperCase()}</h2>
-          <div className="mt-5">
+        <section className="sheet mt-5 p-6 md:p-9">
+          <h2 className="font-display text-3xl leading-none text-ink">
+            {t(audience.locale, "log_workout")}
+          </h2>
+          <div className="mt-6">
             <WorkoutForm locale={audience.locale} />
           </div>
         </section>
 
         {view.showScore && (
-          <section className="mt-8">
+          <section className="mt-5">
             <RecordsCard records={records} locale={audience.locale} />
           </section>
         )}
 
-        <section className="mt-8 rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
-          <h2 className="font-display text-2xl text-bone">{t(audience.locale, "last_7_days").toUpperCase()}</h2>
-          <div className="mt-5">
+        <section className="sheet mt-5 p-6 md:p-9">
+          <h2 className="font-display text-3xl leading-none text-ink">
+            {t(audience.locale, "last_7_days")}
+          </h2>
+          <div className="mt-6">
             <WorkoutList workouts={serializedWorkouts} locale={audience.locale} />
           </div>
         </section>
@@ -239,8 +240,8 @@ export default async function DashboardPage() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="font-mono text-xs uppercase tracking-widest text-bone/40">{label}</p>
-      <p className="mt-1 font-display text-2xl text-bone num-tabular">{value}</p>
+      <p className="caption">{label}</p>
+      <p className="mt-2 font-display text-3xl leading-none text-ink num-tabular">{value}</p>
     </div>
   );
 }
@@ -249,14 +250,14 @@ function StatBar({ label, value, max }: { label: string; value: number; max: num
   const pct = Math.min(100, Math.round((value / max) * 100));
   return (
     <div>
-      <div className="flex items-baseline justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-bone/40">{label}</p>
-        <p className="font-mono text-xs text-bone/60 num-tabular">
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-[13px] text-slate">{label}</p>
+        <p className="text-[13px] text-slate num-tabular">
           {value}/{max}
         </p>
       </div>
-      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-coal-600">
-        <div className="h-full rounded-full bg-volt transition-all" style={{ width: `${pct}%` }} />
+      <div className="meter mt-2.5">
+        <div className="h-full transition-all" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

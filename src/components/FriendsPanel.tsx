@@ -105,12 +105,12 @@ export default function FriendsPanel({ locale }: { locale: Locale }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="font-display text-3xl text-bone md:text-4xl">{t(locale, "friends_heading")}</h1>
+      <h1 className="font-display text-5xl leading-none text-ink md:text-6xl">{t(locale, "friends_heading")}</h1>
 
       {/* Add a friend */}
-      <section className="rounded-2xl border border-coal-600 bg-coal-800 p-6">
-        <h2 className="font-display text-2xl text-bone">{t(locale, "friends_add_heading")}</h2>
-        <p className="mt-1 font-mono text-xs uppercase tracking-widest text-bone/50">
+      <section className="sheet p-6">
+        <h2 className="font-display text-3xl leading-none text-ink">{t(locale, "friends_add_heading")}</h2>
+        <p className="mt-1 caption">
           {t(locale, "friends_add_by_username")}
         </p>
         <form onSubmit={onAdd} className="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -124,22 +124,22 @@ export default function FriendsPanel({ locale }: { locale: Locale }) {
           <button
             type="submit"
             disabled={adding}
-            className="rounded-full bg-volt px-5 py-2 font-bold text-coal-950 transition hover:bg-volt-400 disabled:opacity-50"
+            className="btn-primary"
           >
             {adding ? t(locale, "friends_adding") : t(locale, "friends_add_button")}
           </button>
         </form>
-        {addError && <p className="mt-2 text-sm text-coral">{addError}</p>}
-        {addSuccess && <p className="mt-2 text-sm text-volt">{addSuccess}</p>}
+        {addError && <p className="mt-2 text-sm text-flag-red">{addError}</p>}
+        {addSuccess && <p className="mt-2 text-sm text-signal">{addSuccess}</p>}
       </section>
 
-      {loading && <p className="font-mono text-sm text-bone/40">{t(locale, "loading_ellipsis")}</p>}
+      {loading && <p className="text-sm text-slate-light">{t(locale, "loading_ellipsis")}</p>}
       {loadError && (
-        <div className="rounded-2xl border border-coal-600 bg-coal-800 p-6">
-          <p className="text-sm text-coral">{t(locale, "friends_load_error")}</p>
+        <div className="sheet p-6">
+          <p className="text-sm text-flag-red">{t(locale, "friends_load_error")}</p>
           <button
             onClick={load}
-            className="mt-3 rounded-full border border-coal-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bone/60 hover:border-bone/40 hover:text-bone"
+            className="mt-3 btn-quiet"
           >
             {t(locale, "retry")}
           </button>
@@ -150,27 +150,27 @@ export default function FriendsPanel({ locale }: { locale: Locale }) {
         <>
           {/* Requests */}
           {data.incoming.length > 0 && (
-            <section className="rounded-2xl border border-coal-600 bg-coal-800 p-6">
-              <h2 className="font-display text-2xl text-bone">{t(locale, "friends_requests_heading")}</h2>
-              <ul className="mt-4 flex flex-col divide-y divide-coal-600">
+            <section className="sheet p-6">
+              <h2 className="font-display text-3xl leading-none text-ink">{t(locale, "friends_requests_heading")}</h2>
+              <ul className="mt-4 flex flex-col divide-y divide-rule">
                 {data.incoming.map((p) => (
                   <li key={p.friendshipId} className="flex items-center justify-between gap-3 py-3">
                     <div>
-                      <p className="font-semibold text-bone">{p.displayName}</p>
-                      <p className="font-mono text-xs text-bone/40">@{p.username}</p>
+                      <p className="font-semibold text-ink">{p.displayName}</p>
+                      <p className="text-[13px] text-slate-light">@{p.username}</p>
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => respond(p.friendshipId, "accept")}
                         disabled={pendingAction === p.friendshipId + "accept"}
-                        className="rounded-full bg-volt px-4 py-1.5 text-sm font-bold text-coal-950 transition hover:bg-volt-400 disabled:opacity-50"
+                        className="btn-primary px-4 py-1.5"
                       >
                         {t(locale, "accept")}
                       </button>
                       <button
                         onClick={() => respond(p.friendshipId, "decline")}
                         disabled={pendingAction === p.friendshipId + "decline"}
-                        className="rounded-full border border-coal-600 px-4 py-1.5 text-sm font-semibold text-bone/60 transition hover:border-coral hover:text-coral disabled:opacity-50"
+                        className="btn-quiet px-4 py-1.5 hover:border-flag-red hover:text-flag-red"
                       >
                         {t(locale, "decline")}
                       </button>
@@ -183,19 +183,19 @@ export default function FriendsPanel({ locale }: { locale: Locale }) {
 
           {/* Sent */}
           {data.outgoing.length > 0 && (
-            <section className="rounded-2xl border border-coal-600 bg-coal-800 p-6">
-              <h2 className="font-display text-2xl text-bone">{t(locale, "friends_sent_heading")}</h2>
-              <ul className="mt-4 flex flex-col divide-y divide-coal-600">
+            <section className="sheet p-6">
+              <h2 className="font-display text-3xl leading-none text-ink">{t(locale, "friends_sent_heading")}</h2>
+              <ul className="mt-4 flex flex-col divide-y divide-rule">
                 {data.outgoing.map((p) => (
                   <li key={p.friendshipId} className="flex items-center justify-between gap-3 py-3">
                     <div>
-                      <p className="font-semibold text-bone">{p.displayName}</p>
-                      <p className="font-mono text-xs text-bone/40">@{p.username}</p>
+                      <p className="font-semibold text-ink">{p.displayName}</p>
+                      <p className="text-[13px] text-slate-light">@{p.username}</p>
                     </div>
                     <button
                       onClick={() => remove(p.friendshipId)}
                       disabled={pendingAction === p.friendshipId + "remove"}
-                      className="rounded-full border border-coal-600 px-4 py-1.5 text-sm font-semibold text-bone/60 transition hover:border-coral hover:text-coral disabled:opacity-50"
+                      className="btn-quiet px-4 py-1.5 hover:border-flag-red hover:text-flag-red"
                     >
                       {t(locale, "cancel")}
                     </button>
@@ -206,27 +206,27 @@ export default function FriendsPanel({ locale }: { locale: Locale }) {
           )}
 
           {/* Friends */}
-          <section className="rounded-2xl border border-coal-600 bg-coal-800 p-6">
-            <h2 className="font-display text-2xl text-bone">{t(locale, "friends_your_friends_heading")}</h2>
+          <section className="sheet p-6">
+            <h2 className="font-display text-3xl leading-none text-ink">{t(locale, "friends_your_friends_heading")}</h2>
             {data.friends.length === 0 ? (
-              <p className="mt-3 text-sm text-bone/50">{t(locale, "friends_empty")}</p>
+              <p className="mt-3 text-sm text-slate">{t(locale, "friends_empty")}</p>
             ) : (
-              <ul className="mt-4 flex flex-col divide-y divide-coal-600">
+              <ul className="mt-4 flex flex-col divide-y divide-rule">
                 {data.friends.map((p) => (
                   <li key={p.friendshipId} className="group flex items-center justify-between gap-3 py-3">
                     <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-coal-600 font-mono text-sm text-bone/80">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full border border-rule text-[13px] font-semibold text-slate">
                         {initials(p.displayName)}
                       </span>
                       <div>
-                        <p className="font-semibold text-bone">{p.displayName}</p>
-                        <p className="font-mono text-xs text-bone/40">@{p.username}</p>
+                        <p className="font-semibold text-ink">{p.displayName}</p>
+                        <p className="text-[13px] text-slate-light">@{p.username}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => remove(p.friendshipId)}
                       disabled={pendingAction === p.friendshipId + "remove"}
-                      className="text-xs font-semibold text-bone/30 opacity-0 transition hover:text-coral group-hover:opacity-100 disabled:opacity-50"
+                      className="text-xs font-semibold text-slate-light opacity-0 transition hover:text-flag-red group-hover:opacity-100 disabled:opacity-50"
                     >
                       {t(locale, "remove")}
                     </button>

@@ -79,11 +79,11 @@ export default function GroupDetailPanel({
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/groups" className="font-mono text-xs uppercase tracking-widest text-bone/40 hover:text-bone">
+      <Link href="/groups" className="caption hover:text-ink">
         ← {t(locale, "groups_back")}
       </Link>
 
-      <div className="rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
+      <div className="sheet p-6 md:p-8">
         {renaming ? (
           <form
             onSubmit={async (e) => {
@@ -102,12 +102,12 @@ export default function GroupDetailPanel({
               onChange={(e) => setDraftName(e.target.value)}
               maxLength={MAX_GROUP_NAME}
               autoFocus
-              className="min-w-0 flex-1 rounded-lg border border-coal-600 bg-coal-900 px-3 py-2 text-lg text-bone focus:border-volt focus:outline-none"
+              className="input min-w-0 flex-1 text-lg"
             />
             <button
               type="submit"
               disabled={busy || !draftName.trim()}
-              className="shrink-0 rounded-full bg-volt px-4 py-2 text-sm font-bold text-coal-950 disabled:opacity-30"
+              className="btn-primary shrink-0"
             >
               {t(locale, "groups_save")}
             </button>
@@ -117,18 +117,18 @@ export default function GroupDetailPanel({
                 setRenaming(false);
                 setDraftName(name);
               }}
-              className="shrink-0 rounded-full border border-coal-600 px-4 py-2 text-sm text-bone/60"
+              className="btn-quiet shrink-0"
             >
               {t(locale, "groups_cancel")}
             </button>
           </form>
         ) : (
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="font-display text-4xl uppercase text-bone">{name}</h1>
+            <h1 className="font-display text-5xl leading-none text-ink">{name}</h1>
             {isOwner && (
               <button
                 onClick={() => setRenaming(true)}
-                className="rounded-full border border-coal-600 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-bone/50 transition hover:border-volt hover:text-volt"
+                className="text-[13px] text-slate underline-offset-4 transition-colors hover:text-signal hover:underline"
               >
                 {t(locale, "groups_rename")}
               </button>
@@ -136,23 +136,23 @@ export default function GroupDetailPanel({
           </div>
         )}
 
-        <p className="mt-1 font-mono text-xs uppercase tracking-wide text-bone/40">
+        <p className="mt-1 text-[13px] text-slate-light">
           {tn(locale, "groups_members", members.length)}
         </p>
 
-        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-coal-600 pt-5">
-          <span className="font-mono text-xs uppercase tracking-widest text-bone/50">
+        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-rule pt-5">
+          <span className="caption">
             {t(locale, "groups_code")}
           </span>
           <span
             dir="ltr"
-            className="rounded-lg bg-coal-900 px-4 py-2 font-mono text-xl tracking-[0.3em] text-volt"
+            className="rounded-sheet border border-rule bg-chalk px-4 py-2 text-xl font-semibold tracking-[0.3em] text-ink num-tabular"
           >
             {joinCode}
           </span>
           <button
             onClick={copyCode}
-            className="rounded-full border border-coal-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bone/60 transition hover:border-volt hover:text-volt"
+            className="btn-quiet px-4 py-2 text-[13px]"
           >
             {copied ? t(locale, "groups_copied") : t(locale, "groups_copy")}
           </button>
@@ -160,28 +160,28 @@ export default function GroupDetailPanel({
       </div>
 
       {error && (
-        <p className="rounded-lg border border-coral/30 bg-coral/5 px-4 py-3 text-sm text-coral">{error}</p>
+        <p className="border-s-[3px] border-flag-red bg-chalk px-4 py-3 text-sm text-flag-red">{error}</p>
       )}
 
-      <div className="rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
-        <h2 className="font-display text-2xl uppercase text-bone">{t(locale, "groups_members_heading")}</h2>
+      <div className="sheet p-6 md:p-8">
+        <h2 className="font-display text-3xl leading-none text-ink">{t(locale, "groups_members_heading")}</h2>
         <ul className="mt-4 flex flex-col gap-2">
           {members.map((m) => (
             <li
               key={m.id}
-              className="flex items-center gap-3 rounded-xl border border-transparent bg-coal-900 px-4 py-3"
+              className="flex items-center gap-3 border-b border-rule px-1 py-3"
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold text-bone">
+                <p className="truncate font-semibold text-ink">
                   {m.displayName}
-                  {m.isMe && <span className="ms-1.5 font-normal text-bone/40">{t(locale, "you_marker")}</span>}
+                  {m.isMe && <span className="ms-1.5 font-normal text-slate-light">{t(locale, "you_marker")}</span>}
                 </p>
-                <p dir="ltr" className="truncate font-mono text-[11px] text-bone/40">
+                <p dir="ltr" className="truncate text-[11px] text-slate-light">
                   @{m.username}
                 </p>
               </div>
               {m.isOwner && (
-                <span className="shrink-0 font-mono text-[10px] uppercase tracking-widest text-volt">
+                <span className="shrink-0 text-[11px] font-medium text-signal">
                   {t(locale, "groups_owner")}
                 </span>
               )}
@@ -191,7 +191,7 @@ export default function GroupDetailPanel({
                     if (await call(`/api/groups/${groupId}/members/${m.id}`, "DELETE")) router.refresh();
                   }}
                   disabled={busy}
-                  className="shrink-0 rounded-full border border-coal-600 px-3 py-1 text-xs text-bone/50 transition hover:border-coral hover:text-coral disabled:opacity-30"
+                  className="shrink-0 rounded-full border border-rule px-3 py-1 text-xs text-slate transition hover:border-flag-red hover:text-flag-red disabled:opacity-30"
                 >
                   {t(locale, "groups_remove")}
                 </button>
@@ -200,7 +200,7 @@ export default function GroupDetailPanel({
           ))}
         </ul>
 
-        <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-coal-600 pt-5">
+        <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-rule pt-5">
           <button
             onClick={async () => {
               if (armed !== "leave") {
@@ -210,7 +210,7 @@ export default function GroupDetailPanel({
               if (await call(`/api/groups/${groupId}/leave`, "POST")) router.push("/groups");
             }}
             disabled={busy}
-            className="rounded-full border border-coal-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-bone/60 transition hover:border-coral hover:text-coral disabled:opacity-30"
+            className="rounded-full border border-rule px-4 py-2 text-xs font-semibold text-slate transition hover:border-flag-red hover:text-flag-red disabled:opacity-30"
           >
             {armed === "leave" ? t(locale, "groups_leave_confirm") : t(locale, "groups_leave")}
           </button>
@@ -225,14 +225,14 @@ export default function GroupDetailPanel({
                 if (await call(`/api/groups/${groupId}`, "DELETE")) router.push("/groups");
               }}
               disabled={busy}
-              className="rounded-full border border-coral/40 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-coral transition hover:bg-coral/10 disabled:opacity-30"
+              className="rounded-full border border-flag-red px-4 py-2 text-xs font-semibold text-flag-red transition hover:bg-chalk disabled:opacity-30"
             >
               {armed === "delete" ? t(locale, "groups_delete_confirm") : t(locale, "groups_delete")}
             </button>
           )}
 
           {isOwner && (
-            <p className="w-full text-xs text-bone/40">{t(locale, "groups_owner_leaves_note")}</p>
+            <p className="w-full text-xs text-slate-light">{t(locale, "groups_owner_leaves_note")}</p>
           )}
         </div>
       </div>

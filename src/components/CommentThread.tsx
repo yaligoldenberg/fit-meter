@@ -96,30 +96,30 @@ export default function CommentThread({
       <button
         type="button"
         onClick={toggle}
-        className="font-mono text-[11px] uppercase tracking-widest text-bone/40 transition hover:text-bone"
+        className="text-[11px] text-slate-light transition hover:text-ink"
       >
         {t(locale, "comments_heading")}
         {count > 0 ? ` · ${count}` : ""}
       </button>
 
       {open && (
-        <div className="mt-2 rounded-xl border border-coal-600 bg-coal-900 px-4 py-3">
-          {comments === null && !error && <p className="text-xs text-bone/40">{t(locale, "loading_ellipsis")}</p>}
+        <div className="mt-2 rounded-sheet border border-rule bg-chalk px-4 py-3">
+          {comments === null && !error && <p className="text-xs text-slate-light">{t(locale, "loading_ellipsis")}</p>}
           {comments !== null && comments.length === 0 && (
-            <p className="text-xs text-bone/40">{t(locale, "comment_empty")}</p>
+            <p className="text-xs text-slate-light">{t(locale, "comment_empty")}</p>
           )}
 
           <ul className="flex flex-col gap-2">
             {(comments ?? []).map((c) => (
               <li key={c.id} className="flex items-start gap-2">
-                <span className="text-xs font-semibold text-bone/80">{c.user.displayName}</span>
-                <span className="min-w-0 flex-1 break-words text-xs text-bone/60">{c.body}</span>
+                <span className="text-xs font-semibold text-ink">{c.user.displayName}</span>
+                <span className="min-w-0 flex-1 break-words text-xs text-slate">{c.body}</span>
                 {c.mine && (
                   <button
                     type="button"
                     onClick={() => remove(c.id)}
                     aria-label={t(locale, "comment_delete")}
-                    className="shrink-0 text-bone/30 transition hover:text-coral"
+                    className="shrink-0 text-slate-light transition hover:text-flag-red"
                   >
                     ×
                   </button>
@@ -139,13 +139,13 @@ export default function CommentThread({
             <button
               type="submit"
               disabled={busy || draft.trim().length === 0}
-              className="shrink-0 rounded-full bg-volt px-4 py-1.5 text-xs font-bold text-coal-950 transition hover:bg-volt-400 disabled:opacity-40"
+              className="btn-primary shrink-0 px-4 py-1.5 text-xs"
             >
               {busy ? t(locale, "comment_sending") : t(locale, "comment_send")}
             </button>
           </form>
 
-          {error && <p className="mt-2 text-xs text-coral">{error}</p>}
+          {error && <p className="mt-2 text-xs text-flag-red">{error}</p>}
         </div>
       )}
     </div>

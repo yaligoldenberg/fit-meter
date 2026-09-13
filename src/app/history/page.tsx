@@ -99,7 +99,7 @@ export default async function HistoryPage({
   const hasHistory = totalWorkouts > 0;
 
   return (
-    <div className="min-h-screen bg-coal-900">
+    <div className="min-h-screen bg-canvas">
       <AppNav
         displayName={user.displayName}
         username={user.username}
@@ -108,15 +108,19 @@ export default async function HistoryPage({
         showRanks={view.showTitles}
       />
       <main className="mx-auto max-w-5xl px-6 py-10 md:px-8">
-        <h1 className="font-display text-4xl text-bone md:text-5xl">{t(audience.locale, "history_heading")}</h1>
-        <p className="mt-2 text-sm text-bone/60">{t(audience.locale, "history_subtitle")}</p>
+        <h1 className="font-display text-5xl leading-none text-ink md:text-6xl">
+          {t(audience.locale, "history_heading")}
+        </h1>
+        <p className="mt-3 text-[15px] text-slate">{t(audience.locale, "history_subtitle")}</p>
 
         {!hasHistory ? (
-          <div className="mt-10 rounded-2xl border border-coal-600 bg-coal-800 p-10 text-center">
-            <p className="font-display text-2xl text-bone">{t(audience.locale, "history_empty_title")}</p>
-            <p className="mt-2 text-sm text-bone/60">
+          <div className="sheet mt-8 p-10 text-center">
+            <p className="font-display text-3xl leading-none text-ink">
+              {t(audience.locale, "history_empty_title")}
+            </p>
+            <p className="mt-3 text-sm text-slate">
               {t(audience.locale, "history_empty_body_pre")}
-              <a href="/dashboard" className="font-semibold text-volt">
+              <a href="/dashboard" className="font-semibold text-signal underline-offset-4 hover:underline">
                 {t(audience.locale, "history_empty_link")}
               </a>
               {t(audience.locale, "history_empty_body_post")}
@@ -125,8 +129,8 @@ export default async function HistoryPage({
         ) : (
           <>
             {view.showScore && (
-            <section className="mt-8 rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
-              <h2 className="font-mono text-xs uppercase tracking-widest text-bone/50">
+            <section className="sheet mt-8 p-6 md:p-8">
+              <h2 className="font-display text-2xl leading-none text-ink">
                 {t(audience.locale, "history_trend_heading")}
               </h2>
               <div className="mt-6 flex h-48 items-end gap-2 md:gap-3">
@@ -137,16 +141,18 @@ export default async function HistoryPage({
                         {w.weekTitle.emoji}
                       </span>
                     )}
-                    <span className={`font-display text-lg ${gradeColor(w.grade)}`}>{w.grade}</span>
-                    <div className="flex h-32 w-full items-end overflow-hidden rounded-t-md bg-coal-700">
+                    <span className={`font-display text-2xl leading-none ${gradeColor(w.grade)}`}>
+                      {w.grade}
+                    </span>
+                    <div className="flex h-32 w-full items-end bg-chalk-200">
                       <div
-                        className={`w-full rounded-t-md ${w.isCurrent ? "bg-volt" : "bg-volt/50"}`}
+                        className={`w-full ${w.isCurrent ? "bg-signal" : "bg-ink"}`}
                         style={{ height: `${Math.max(w.score, 3)}%` }}
                       />
                     </div>
                     <span
-                      className={`font-mono text-[10px] ${
-                        w.isCurrent ? "text-bone" : "text-bone/40"
+                      className={`text-[11px] num-tabular ${
+                        w.isCurrent ? "font-semibold text-ink" : "text-slate-light"
                       }`}
                     >
                       {MONTH_DAY.format(w.start)}
@@ -159,7 +165,7 @@ export default async function HistoryPage({
 
             {view.showScore && (
             <section className="mt-8">
-              <h2 className="font-mono text-xs uppercase tracking-widest text-bone/50">
+              <h2 className="font-display text-2xl leading-none text-ink">
                 {t(audience.locale, "history_recap_heading")}
               </h2>
               <div className="mt-4 flex flex-col gap-3">
@@ -168,14 +174,14 @@ export default async function HistoryPage({
                   .map((w) => (
                     <div
                       key={w.start.toISOString()}
-                      className="flex flex-col gap-3 rounded-2xl border border-coal-600 bg-coal-800 p-5 sm:flex-row sm:items-start sm:justify-between sm:gap-6"
+                      className="sheet flex flex-col gap-3 p-5 sm:flex-row sm:items-start sm:justify-between sm:gap-6"
                     >
                       <div className="flex items-baseline gap-3 sm:w-40 sm:shrink-0">
-                        <span className="font-mono text-xs uppercase tracking-widest text-bone/40">
+                        <span className="text-[13px] font-medium text-slate num-tabular">
                           {MONTH_DAY.format(w.start)}
                         </span>
                         {w.isCurrent && (
-                          <span className="rounded-full bg-volt/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-volt">
+                          <span className="rounded-full border border-signal px-2 py-0.5 text-[11px] font-medium text-signal">
                             {t(audience.locale, "history_current")}
                           </span>
                         )}
@@ -184,10 +190,10 @@ export default async function HistoryPage({
                         {w.weekTitle ? (
                           <>
                             <WeekTitleBadge weekTitle={w.weekTitle} compact />
-                            <p className="mt-1.5 text-sm text-bone/60">{w.weekTitle.reason}</p>
+                            <p className="mt-1.5 text-sm text-slate">{w.weekTitle.reason}</p>
                           </>
                         ) : (
-                          <p className="text-sm text-bone/60">
+                          <p className="text-sm text-slate">
                             {tn(audience.locale, "lb_workouts", w.workoutCount)} ·{" "}
                             {w.totalMinutes} {t(audience.locale, "unit_min")} ·{" "}
                             {tn(audience.locale, "lb_days", w.activeDays)}
@@ -195,8 +201,10 @@ export default async function HistoryPage({
                         )}
                       </div>
                       <div className="flex items-center gap-2 sm:flex-col sm:items-end">
-                        <span className={`font-display text-2xl ${gradeColor(w.grade)}`}>{w.grade}</span>
-                        <span className="font-mono text-xs text-bone/40 num-tabular">{w.score}/100</span>
+                        <span className={`font-display text-3xl leading-none ${gradeColor(w.grade)}`}>
+                          {w.grade}
+                        </span>
+                        <span className="text-[13px] text-slate num-tabular">{w.score}/100</span>
                       </div>
                     </div>
                   ))}
@@ -205,14 +213,14 @@ export default async function HistoryPage({
             )}
 
             <section className="mt-8">
-              <h2 className="font-mono text-xs uppercase tracking-widest text-bone/50">
+              <h2 className="font-display text-2xl leading-none text-ink">
                 {t(audience.locale, "history_full_log_heading")}
               </h2>
-              <div className="mt-4 rounded-2xl border border-coal-600 bg-coal-800 p-6 md:p-8">
+              <div className="sheet mt-4 p-6 md:p-8">
                 {groups.map((group, gi) => (
-                  <div key={group.key} className={gi > 0 ? "mt-6" : ""}>
-                    <p className="font-mono text-xs uppercase tracking-widest text-bone/40">{group.label}</p>
-                    <div className="mt-2 divide-y divide-coal-600">
+                  <div key={group.key} className={gi > 0 ? "mt-7" : ""}>
+                    <p className="caption">{group.label}</p>
+                    <div className="mt-2.5 divide-y divide-rule border-t border-rule">
                       {group.workouts.map((w) => {
                         const typeKey = (w.type in WORKOUT_TYPES ? w.type : "OTHER") as WorkoutTypeKey;
                         const intensityKey = (w.intensity in INTENSITIES ? w.intensity : "MEDIUM") as IntensityKey;
@@ -221,27 +229,27 @@ export default async function HistoryPage({
                         const tier = TIER_META[rating.tier];
                         return (
                           <div key={w.id} className="flex flex-wrap items-center gap-3 py-3">
-                            <span className="text-volt">{typeIcon}</span>
-                            <span className="font-semibold text-bone">{typeLabel(typeKey, audience.locale)}</span>
-                            <span className="font-mono text-sm text-bone/50 num-tabular">
+                            <span className="text-slate-light">{typeIcon}</span>
+                            <span className="font-semibold text-ink">{typeLabel(typeKey, audience.locale)}</span>
+                            <span className="text-sm text-slate num-tabular">
                               {w.duration} {t(audience.locale, "unit_min")}
                             </span>
-                            <span className="font-mono text-xs uppercase tracking-widest text-bone/40">
+                            <span className="text-sm text-slate-light">
                               {intensityLabel(intensityKey, audience.locale)}
                             </span>
                             {w.distanceKm != null && (
-                              <span className="font-mono text-sm text-bone/50 num-tabular">
+                              <span className="text-sm text-slate num-tabular">
                                 {w.distanceKm} {t(audience.locale, "unit_km")}
                               </span>
                             )}
                             <span
                               title={explainRating(w, rating, audience.locale)}
-                              className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest ${tier.className}`}
+                              className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${tier.className}`}
                             >
                               {t(audience.locale, `difficulty_${rating.tier}`)} · {rating.rating}
                             </span>
                             {w.note && (
-                              <span className="w-full text-sm text-bone/40 md:w-auto md:flex-1 md:truncate">
+                              <span className="w-full text-sm text-slate-light md:w-auto md:flex-1 md:truncate">
                                 “{w.note}”
                               </span>
                             )}
@@ -253,16 +261,16 @@ export default async function HistoryPage({
                 ))}
               </div>
               {totalPages > 1 && (
-                <div className="mt-4 flex items-center justify-between font-mono text-xs uppercase tracking-widest">
+                <div className="mt-4 flex items-center justify-between text-sm">
                   {page < totalPages ? (
-                    <a href={`/history?page=${page + 1}`} className="text-bone/60 hover:text-volt">
+                    <a href={`/history?page=${page + 1}`} className="text-slate underline-offset-4 hover:text-signal hover:underline">
                       {t(audience.locale, "history_older")}
                     </a>
                   ) : (
                     <span />
                   )}
                   {page > 1 ? (
-                    <a href={`/history?page=${page - 1}`} className="text-bone/60 hover:text-volt">
+                    <a href={`/history?page=${page - 1}`} className="text-slate underline-offset-4 hover:text-signal hover:underline">
                       {t(audience.locale, "history_newer")}
                     </a>
                   ) : (

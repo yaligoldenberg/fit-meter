@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Locale, t } from "@/lib/i18n";
 import LanguageToggle from "./LanguageToggle";
+import Wordmark from "./Wordmark";
+import ThemeToggle from "./ThemeToggle";
 
 type Mode = "login" | "register";
 
@@ -69,20 +71,22 @@ export default function AuthForm({ mode, locale }: { mode: Mode; locale: Locale 
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
-      <Link href="/" className="mb-8 font-display text-2xl tracking-wide text-bone">
-        FIT<span className="text-volt">METER</span>
-      </Link>
-      <div className="mb-8">
-        <LanguageToggle locale={locale} variant="full" />
+      <div className="mb-8 flex items-center justify-between gap-4">
+        <Link href="/" aria-label="FitMeter">
+          <Wordmark size="text-2xl" />
+        </Link>
+        <ThemeToggle locale={locale} />
       </div>
-      <h1 className="font-display text-4xl text-bone">
-        {t(locale, mode === "login" ? "auth_welcome_back" : "auth_join").toUpperCase()}
-      </h1>
-      <p className="mt-2 text-sm text-bone/60">
-        {t(locale, mode === "login" ? "auth_login_sub" : "auth_register_sub")}
-      </p>
+      <div className="sheet p-7 md:p-8">
+        <LanguageToggle locale={locale} variant="full" />
+        <h1 className="mt-7 font-display text-5xl leading-none text-ink">
+          {t(locale, mode === "login" ? "auth_welcome_back" : "auth_join")}
+        </h1>
+        <p className="mt-2.5 text-sm leading-relaxed text-slate">
+          {t(locale, mode === "login" ? "auth_login_sub" : "auth_register_sub")}
+        </p>
 
-      <form onSubmit={onSubmit} className="mt-8 flex flex-col gap-4">
+      <form onSubmit={onSubmit} className="mt-7 flex flex-col gap-4">
         {mode === "register" && (
           <>
             <Field label={t(locale, "field_display_name")}>
@@ -128,17 +132,15 @@ export default function AuthForm({ mode, locale }: { mode: Mode; locale: Locale 
                     type="button"
                     onClick={() => setGender(value)}
                     aria-pressed={gender === value}
-                    className={`flex-1 rounded-full border px-4 py-2.5 text-sm font-semibold transition ${
-                      gender === value
-                        ? "border-volt bg-volt text-coal-950"
-                        : "border-coal-600 bg-coal-900 text-bone/70 hover:border-bone/40"
+                    className={`chip flex-1 justify-center py-2.5 ${
+                      gender === value ? "chip-on" : ""
                     }`}
                   >
                     {label}
                   </button>
                 ))}
               </div>
-              <p className="mt-1.5 text-xs text-bone/40">{t(locale, "gender_hint")}</p>
+              <p className="mt-1.5 text-xs text-slate-light">{t(locale, "gender_hint")}</p>
             </Field>
           </>
         )}
@@ -165,29 +167,30 @@ export default function AuthForm({ mode, locale }: { mode: Mode; locale: Locale 
           />
         </Field>
 
-        {error && <p className="rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p>}
+        {error && (
+          <p className="border-s-[3px] border-flag-red bg-chalk px-3 py-2 text-sm text-flag-red">
+            {error}
+          </p>
+        )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-2 rounded-full bg-volt px-6 py-3 font-bold text-coal-950 transition hover:bg-volt-400 disabled:opacity-50"
-        >
+        <button type="submit" disabled={loading} className="btn-primary mt-2 py-3 text-base">
           {loading ? t(locale, "auth_wait") : t(locale, mode === "login" ? "login" : "auth_submit_register")}
         </button>
       </form>
+      </div>
 
-      <p className="mt-6 text-center text-sm text-bone/50">
+      <p className="mt-6 text-center text-sm text-slate">
         {mode === "login" ? (
           <>
             {t(locale, "auth_new_here")}{" "}
-            <Link href="/register" className="font-semibold text-volt">
+            <Link href="/register" className="font-semibold text-signal underline-offset-4 hover:underline">
               {t(locale, "auth_submit_register")}
             </Link>
           </>
         ) : (
           <>
             {t(locale, "auth_have_one")}{" "}
-            <Link href="/login" className="font-semibold text-volt">
+            <Link href="/login" className="font-semibold text-signal underline-offset-4 hover:underline">
               {t(locale, "login")}
             </Link>
           </>
@@ -200,7 +203,7 @@ export default function AuthForm({ mode, locale }: { mode: Mode; locale: Locale 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="font-mono text-xs uppercase tracking-widest text-bone/50">{label}</span>
+      <span className="caption">{label}</span>
       {children}
     </label>
   );

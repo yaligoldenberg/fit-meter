@@ -24,10 +24,12 @@ interface WorkoutItem {
 }
 
 const INTENSITY_BADGE: Record<string, string> = {
-  LOW: "border-coal-600 text-bone/50",
-  MEDIUM: "border-bone/30 text-bone/80",
-  HIGH: "border-coral/50 text-coral",
+  LOW: "border-rule text-slate-light",
+  MEDIUM: "border-rule text-slate",
+  HIGH: "border-flag-red/40 text-flag-red",
 };
+
+const BADGE = "rounded-full border px-2 py-0.5 text-[11px] font-medium";
 
 function formatDate(iso: string, locale: Locale): string {
   const localeTag = locale === "he" ? "he-IL" : "en-US";
@@ -60,13 +62,17 @@ export default function WorkoutList({ workouts, locale }: { workouts: WorkoutIte
   }
 
   if (sorted.length === 0) {
-    return <p className="py-6 text-center text-sm text-bone/40">{t(locale, "nothing_logged")}</p>;
+    return <p className="py-6 text-center text-sm text-slate-light">{t(locale, "nothing_logged")}</p>;
   }
 
   return (
     <div>
-      {error && <p className="mb-3 rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p>}
-      <ul className="divide-y divide-coal-600">
+      {error && (
+        <p className="mb-3 border-s-[3px] border-flag-red bg-chalk px-3 py-2 text-sm text-flag-red">
+          {error}
+        </p>
+      )}
+      <ul className="divide-y divide-rule border-t border-rule">
         {sorted.map((w) => {
           const typeKey = (w.type in WORKOUT_TYPES ? w.type : "OTHER") as WorkoutTypeKey;
           const intensityKey = (["LOW", "MEDIUM", "HIGH"].includes(w.intensity)
@@ -79,43 +85,39 @@ export default function WorkoutList({ workouts, locale }: { workouts: WorkoutIte
           const busy = deletingId === w.id;
           return (
             <li key={w.id} className="flex items-center gap-4 py-3.5">
-              <span className="text-lg text-volt">{meta.icon}</span>
+              <span className="text-lg text-slate-light">{meta.icon}</span>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold text-bone">{typeLabel(typeKey, locale)}</span>
-                  <span
-                    className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest ${
-                      INTENSITY_BADGE[w.intensity] ?? INTENSITY_BADGE.MEDIUM
-                    }`}
-                  >
+                  <span className="font-semibold text-ink">{typeLabel(typeKey, locale)}</span>
+                  <span className={`${BADGE} ${INTENSITY_BADGE[w.intensity] ?? INTENSITY_BADGE.MEDIUM}`}>
                     {intensityLabel(intensityKey, locale)}
                   </span>
                   {w.distanceKm ? (
-                    <span className="font-mono text-xs text-bone/50">{w.distanceKm} {t(locale, "unit_km")}</span>
+                    <span className="text-[13px] text-slate num-tabular">
+                      {w.distanceKm} {t(locale, "unit_km")}
+                    </span>
                   ) : null}
                   {w.isRecord && (
-                    <span className="rounded-full border border-volt bg-volt/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest text-volt">
-                      {t(locale, "record_new")}
-                    </span>
+                    <span className={`${BADGE} border-signal text-signal`}>{t(locale, "record_new")}</span>
                   )}
-                  <span
-                    title={explainRating(w, rating, locale)}
-                    className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest ${tier.className}`}
-                  >
+                  <span title={explainRating(w, rating, locale)} className={`${BADGE} ${tier.className}`}>
                     {tierLabel} · {rating.rating}
                   </span>
                 </div>
-                {w.note ? <p className="mt-0.5 truncate text-sm text-bone/50">{w.note}</p> : null}
+                {w.note ? <p className="mt-1 truncate text-sm text-slate">{w.note}</p> : null}
               </div>
-              <span className="shrink-0 font-mono text-xs text-bone/40">{formatDate(w.date, locale)}</span>
-              <span className="w-14 shrink-0 text-end font-display text-lg text-bone num-tabular">
-                {w.duration}m
+              <span className="shrink-0 text-[13px] text-slate-light">{formatDate(w.date, locale)}</span>
+              <span className="w-16 shrink-0 text-end font-display text-2xl leading-none text-ink num-tabular">
+                {w.duration}
+                <span className="ms-1 font-body text-[13px] font-normal text-slate">
+                  {t(locale, "unit_min")}
+                </span>
               </span>
               <button
                 onClick={() => onDelete(w.id)}
                 disabled={busy}
                 aria-label={t(locale, "delete_workout")}
-                className="shrink-0 rounded-full px-2 py-1 text-bone/30 transition hover:bg-coral/10 hover:text-coral disabled:opacity-30"
+                className="shrink-0 rounded-full px-2 py-1 text-slate-light transition-colors hover:text-flag-red disabled:opacity-30"
               >
                 {busy ? "…" : "×"}
               </button>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Locale, LOCALES, t } from "@/lib/i18n";
+import { Locale, LOCALES, LOCALE_COOKIE, t } from "@/lib/i18n";
 
 /**
  * עברית / EN switch. Persists to the user record and the locale cookie, then re-renders RTL/LTR.
@@ -14,10 +14,13 @@ import { Locale, LOCALES, t } from "@/lib/i18n";
 export default function LanguageToggle({
   locale,
   variant = "compact",
+  tone = "dark",
 }: {
   locale: Locale;
   /** `compact` is the in-nav pill; `full` spells the languages out for pre-login pages. */
   variant?: "compact" | "full";
+  /** `light` for the pill sitting on the signal field. */
+  tone?: "dark" | "light";
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -25,14 +28,20 @@ export default function LanguageToggle({
   async function switchTo(next: Locale) {
     if (next === locale || busy) return;
     setBusy(true);
+    // The cookie is what the server renders from, so write it first: the switch then
+    // works even when the request below fails, rather than silently doing nothing.
+    document.cookie = `${LOCALE_COOKIE}=${next};path=/;max-age=31536000;samesite=lax`;
     try {
+      // Only signed-in users have a record to persist to; the cookie covers the rest.
       await fetch("/api/preferences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ locale: next }),
       });
-      router.refresh();
+    } catch {
+      // Offline or server down — the cookie already carries the change.
     } finally {
+      router.refresh();
       setBusy(false);
     }
   }
@@ -40,9 +49,7 @@ export default function LanguageToggle({
   if (variant === "full") {
     return (
       <div>
-        <p className="font-mono text-xs uppercase tracking-widest text-bone/50">
-          {t(locale, "language_choose")}
-        </p>
+        <p className="caption">{t(locale, "language_choose")}</p>
         <div className="mt-2 flex gap-2" role="group" aria-label={t(locale, "language_choose")}>
           {LOCALES.map((option) => (
             <button
@@ -53,10 +60,8 @@ export default function LanguageToggle({
               onClick={() => switchTo(option)}
               disabled={busy}
               aria-pressed={locale === option}
-              className={`flex-1 rounded-full border px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50 ${
-                locale === option
-                  ? "border-volt bg-volt text-coal-950"
-                  : "border-coal-600 bg-coal-900 text-bone/70 hover:border-bone/40"
+              className={`chip flex-1 justify-center py-2.5 disabled:opacity-50 ${
+                locale === option ? "chip-on" : ""
               }`}
             >
               {t(locale, option === "he" ? "language_native_he" : "language_native_en")}
@@ -69,7 +74,9 @@ export default function LanguageToggle({
 
   return (
     <div
-      className="flex items-center gap-1 rounded-full border border-coal-600 bg-coal-900 p-0.5"
+      className={`flex items-center gap-0.5 rounded-full border p-0.5 ${
+        tone === "light" ? "border-paper/40" : "border-rule bg-paper"
+      }`}
       role="group"
       aria-label={t(locale, "language")}
     >
@@ -80,8 +87,14 @@ export default function LanguageToggle({
           onClick={() => switchTo(option)}
           disabled={busy}
           aria-pressed={locale === option}
-          className={`rounded-full px-2.5 py-1 font-mono text-[10px] uppercase tracking-widest transition disabled:opacity-50 ${
-            locale === option ? "bg-volt text-coal-950" : "text-bone/60 hover:text-bone"
+          className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
+            locale === option
+              ? tone === "light"
+                ? "bg-paper text-signal"
+                : "bg-signal text-paper"
+              : tone === "light"
+              ? "text-paper/70 hover:text-paper"
+              : "text-slate hover:text-ink"
           }`}
         >
           {option === "he" ? "עב" : "EN"}

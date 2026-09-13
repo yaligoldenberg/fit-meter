@@ -41,9 +41,9 @@ export default function RankLadder({
           <li
             key={rung.id}
             aria-current={isCurrent ? "step" : undefined}
-            className={`rounded-2xl border bg-coal-800 p-5 transition md:p-6 ${
-              isCurrent ? tierBorder(rung.tier) : "border-coal-600"
-            } ${unlocked ? "" : "opacity-70"}`}
+            className={`sheet p-5 md:p-6 ${
+              isCurrent ? `border-s-[3px] ${tierBorder(rung.tier)}` : ""
+            } ${unlocked ? "" : "opacity-60"}`}
           >
             <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
               <span className={`text-2xl leading-none ${unlocked ? "" : "grayscale"}`} aria-hidden="true">
@@ -52,8 +52,8 @@ export default function RankLadder({
 
               <div className="min-w-[12rem] flex-1">
                 {sameForm ? (
-                  <p className={`font-display text-xl tracking-wide ${tierColor(rung.tier)}`}>
-                    {rung.titleF.toUpperCase()}
+                  <p className={`font-display text-3xl leading-none ${tierColor(rung.tier)}`}>
+                    {rung.titleF}
                   </p>
                 ) : (
                   <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -63,7 +63,7 @@ export default function RankLadder({
                       tier={rung.tier}
                       own={gender === "F"}
                     />
-                    <span className="text-bone/20" aria-hidden="true">
+                    <span className="text-chalk-300" aria-hidden="true">
                       /
                     </span>
                     <TitleForm
@@ -77,23 +77,23 @@ export default function RankLadder({
 
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   {isCurrent && (
-                    <span className="rounded-full bg-volt px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-coal-950">
+                    <span className="rounded-full bg-signal px-2.5 py-0.5 text-[11px] font-medium text-paper">
                       {t(locale, "ranks_you_are_here")}
                     </span>
                   )}
                   {isCurrent && atRisk && (
-                    <span className="rounded-full border border-coral/40 bg-coral/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-coral">
+                    <span className="rounded-full border border-flag-red px-2.5 py-0.5 text-[11px] font-medium text-flag-red">
                       {t(locale, "title_at_risk")}
                     </span>
                   )}
                   {isNext && (
-                    <span className="rounded-full border border-volt/50 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-widest text-volt">
+                    <span className="rounded-full border border-signal px-2.5 py-0.5 text-[11px] font-medium text-signal">
                       {t(locale, "ranks_next_up")}
                     </span>
                   )}
                   <span
-                    className={`rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-widest ${
-                      unlocked ? "border-coal-600 text-bone/50" : "border-coal-600 text-bone/30"
+                    className={`rounded-full border border-rule px-2.5 py-0.5 text-[11px] font-medium ${
+                      unlocked ? "text-slate" : "text-slate-light"
                     }`}
                   >
                     {t(locale, unlocked ? "ranks_unlocked" : "ranks_locked")}
@@ -102,20 +102,18 @@ export default function RankLadder({
               </div>
 
               <div className="text-end">
-                <p className="font-mono text-[10px] uppercase tracking-widest text-bone/40">
-                  {t(locale, "ranks_score_needed")}
+                <p className="caption">{t(locale, "ranks_score_needed")}</p>
+                <p className="mt-2 font-display text-4xl leading-none text-ink num-tabular">
+                  {rung.minScore}
                 </p>
-                <p className="font-display text-3xl text-bone num-tabular">{rung.minScore}</p>
               </div>
             </div>
 
             {/* The bottom rung is the default — there is nothing to do to earn it. */}
             {rung.minScore > 0 && (
-              <div className="mt-4 border-t border-coal-600 pt-3">
-                <p className="font-mono text-[10px] uppercase tracking-widest text-bone/40">
-                  {t(locale, "ranks_what_it_takes")}
-                </p>
-                <ul className="mt-2 flex flex-col gap-1.5 text-sm text-bone/60">
+              <div className="mt-4 border-t border-rule pt-3.5">
+                <p className="caption">{t(locale, "ranks_what_it_takes")}</p>
+                <ul className="mt-2.5 flex flex-col gap-1.5 text-sm text-slate">
                   <li>
                     {rung.requirement.effortWithFullHabit === 0
                       ? t(locale, "ranks_route_habit_free")
@@ -150,10 +148,10 @@ function TitleForm({
 }) {
   return (
     <span className="flex items-baseline gap-1.5">
-      <span className={`font-display text-xl tracking-wide ${own ? tierColor(tier) : "text-bone/50"}`}>
-        {title.toUpperCase()}
+      <span className={`font-display text-3xl leading-none ${own ? tierColor(tier) : "text-slate-light"}`}>
+        {title}
       </span>
-      <span className="font-mono text-[10px] uppercase tracking-widest text-bone/30">{label}</span>
+      <span className="text-[11px] text-slate-light">{label}</span>
     </span>
   );
 }

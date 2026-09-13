@@ -79,7 +79,7 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
       <div>
-        <p className="mb-2 font-mono text-xs uppercase tracking-widest text-bone/50">{t(locale, "field_type")}</p>
+        <p className="caption mb-2.5">{t(locale, "field_type")}</p>
         <div className="flex flex-wrap gap-2">
           {WORKOUT_TYPE_ORDER.filter(
             (key, i) => showAllTypes || i < COMMON_TYPE_COUNT || key === type
@@ -91,11 +91,7 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
                 key={key}
                 aria-pressed={active}
                 onClick={() => setType(key)}
-                className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                  active
-                    ? "border-volt bg-volt text-coal-950"
-                    : "border-coal-600 bg-coal-900 text-bone/70 hover:border-bone/40"
-                }`}
+                className={`chip flex items-center gap-2 ${active ? "chip-on" : ""}`}
               >
                 <span>{WORKOUT_TYPES[key].icon}</span>
                 {typeLabel(key, locale)}
@@ -106,7 +102,7 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
             <button
               type="button"
               onClick={() => setShowAllTypes((v) => !v)}
-              className="flex items-center gap-2 rounded-full border border-dashed border-coal-600 px-4 py-2 text-sm font-semibold text-bone/50 transition hover:border-bone/40 hover:text-bone/70"
+              className="chip border-dashed"
             >
               {showAllTypes ? t(locale, "less") : t(locale, "more")}
             </button>
@@ -116,9 +112,7 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <label className="flex flex-col gap-1.5">
-          <span className="font-mono text-xs uppercase tracking-widest text-bone/50">
-            {t(locale, "field_duration")}
-          </span>
+          <span className="caption">{t(locale, "field_duration")}</span>
           <input
             required
             type="number"
@@ -131,9 +125,7 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
         </label>
         {usesDistance(type) && (
           <label className="flex flex-col gap-1.5">
-            <span className="font-mono text-xs uppercase tracking-widest text-bone/50">
-              {t(locale, "field_distance")}
-            </span>
+            <span className="caption">{t(locale, "field_distance")}</span>
             <input
               type="number"
               min={0}
@@ -146,11 +138,11 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
           </label>
         )}
         <label className="flex flex-col gap-1.5">
-          <span className="font-mono text-xs uppercase tracking-widest text-bone/50">{t(locale, "field_date")}</span>
+          <span className="caption">{t(locale, "field_date")}</span>
           <input required type="date" value={date} onChange={(e) => setDate(e.target.value)} className="input" />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="font-mono text-xs uppercase tracking-widest text-bone/50">{t(locale, "field_note")}</span>
+          <span className="caption">{t(locale, "field_note")}</span>
           <input
             type="text"
             maxLength={280}
@@ -163,9 +155,7 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
       </div>
 
       <div>
-        <p className="mb-2 font-mono text-xs uppercase tracking-widest text-bone/50">
-          {t(locale, "field_intensity")}
-        </p>
+        <p className="caption mb-2.5">{t(locale, "field_intensity")}</p>
         <div className="flex gap-2">
           {(Object.keys(INTENSITIES) as IntensityKey[]).map((key) => {
             const active = intensity === key;
@@ -175,12 +165,12 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
                 key={key}
                 title={intensityHint(key, locale)}
                 onClick={() => setIntensity(key)}
-                className={`flex-1 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                className={`chip flex-1 justify-center ${
                   active
                     ? key === "HIGH"
-                      ? "border-coral bg-coral text-coal-950"
-                      : "border-volt bg-volt text-coal-950"
-                    : "border-coal-600 bg-coal-900 text-bone/70 hover:border-bone/40"
+                      ? "border-flag-red bg-flag-red text-paper hover:border-flag-red hover:text-paper"
+                      : "chip-on"
+                    : ""
                 }`}
               >
                 {intensityLabel(key, locale)}
@@ -190,18 +180,19 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
         </div>
       </div>
 
-      {error && <p className="rounded-lg bg-coral/10 px-3 py-2 text-sm text-coral">{error}</p>}
+      {error && (
+        <p className="border-s-[3px] border-flag-red bg-chalk px-3 py-2 text-sm text-flag-red">
+          {error}
+        </p>
+      )}
 
       <div className="flex items-center gap-4">
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-full bg-volt px-6 py-3 font-bold text-coal-950 transition hover:bg-volt-400 disabled:opacity-50"
-        >
+        <button type="submit" disabled={loading} className="btn-primary py-3 text-base">
           {loading ? t(locale, "saving") : t(locale, "save_workout")}
         </button>
         <span
-          className={`font-mono text-sm text-volt transition-opacity duration-300 ${
+          aria-live="polite"
+          className={`text-sm font-semibold text-signal transition-opacity duration-300 ${
             success ? "opacity-100" : "opacity-0"
           }`}
         >

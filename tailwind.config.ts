@@ -1,41 +1,58 @@
 import type { Config } from "tailwindcss";
 
+/** Every colour is a CSS variable, so one `.dark` class reskins the whole app. */
+const c = (name: string) => `rgb(var(--c-${name}) / <alpha-value>)`;
+
 const config: Config = {
+  darkMode: "class",
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
-        coal: {
-          950: "#08090a",
-          900: "#0d0f0e",
-          800: "#141715",
-          700: "#1c211e",
-          600: "#272e29",
-          500: "#3a453e",
+        canvas: c("canvas"),
+        paper: c("paper"),
+        ink: {
+          DEFAULT: c("ink"),
+          800: c("ink-800"),
+          700: c("ink-700"),
+          600: c("ink-600"),
         },
-        volt: {
-          DEFAULT: "#d7ff3f",
-          400: "#e2ff70",
-          500: "#d7ff3f",
-          600: "#b8e01c",
+        chalk: {
+          DEFAULT: c("chalk"),
+          50: c("chalk-50"),
+          200: c("chalk-200"),
+          300: c("chalk-300"),
         },
-        coral: {
-          DEFAULT: "#ff5b3d",
-          400: "#ff7b5f",
-          500: "#ff5b3d",
-          600: "#e6431f",
+        rule: {
+          DEFAULT: c("rule"),
+          dark: c("rule-dark"),
         },
-        bone: "#f3f1e7",
+        slate: {
+          DEFAULT: c("slate"),
+          light: c("slate-light"),
+        },
+        signal: {
+          DEFAULT: c("signal"),
+          700: c("signal-700"),
+          400: c("signal-400"),
+          50: c("signal-50"),
+        },
+        flag: {
+          red: c("flag-red"),
+          amber: c("flag-amber"),
+        },
       },
-      // Heebo sits behind each Latin face: browsers fall back per glyph, so Latin
-      // keeps Anton/Manrope/Plex and Hebrew — which none of them cover — gets Heebo.
       fontFamily: {
-        display: ["var(--font-anton)", "var(--font-heebo)", "Impact", "sans-serif"],
-        body: ["var(--font-manrope)", "var(--font-heebo)", "sans-serif"],
-        mono: ["var(--font-plex-mono)", "var(--font-heebo)", "monospace"],
+        sans: ["var(--font-rubik)", "system-ui", "sans-serif"],
+        display: ["var(--font-rubik)", "system-ui", "sans-serif"],
+        body: ["var(--font-rubik)", "system-ui", "sans-serif"],
       },
-      backgroundImage: {
-        "grain": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E\")",
+      borderRadius: {
+        sheet: "6px",
+      },
+      boxShadow: {
+        sheet: "none",
+        lift: "0 1px 2px rgb(0 0 0 / 0.04), 0 12px 32px rgb(0 0 0 / 0.10)",
       },
     },
   },
