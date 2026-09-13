@@ -11,13 +11,18 @@ export interface Audience {
 /**
  * Who is looking at the page — language and grammatical gender.
  *
- * The signed-in user's stored preference wins; the cookie covers logged-out pages and
- * keeps the server-rendered `dir` in sync with what the user last picked.
+ * The cookie wins when it is set, because it is the visitor's most recent explicit
+ * choice and it is also what the root layout renders `lang`/`dir` from. Letting the
+ * stored preference win instead split those two apart: picking English flipped the
+ * document to LTR while every string kept rendering in Hebrew, any time the write to
+ * the user record failed or lagged. The stored value still covers a fresh device,
+ * where there is no cookie yet.
  */
 export async function getAudience(): Promise<Audience> {
   const cookieLocale = (await cookies()).get(LOCALE_COOKIE)?.value;
+  const chosen = isLocale(cookieLocale) ? cookieLocale : null;
   const fallback: Audience = {
-    locale: isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE,
+    locale: chosen ?? DEFAULT_LOCALE,
     gender: null,
   };
 
@@ -31,7 +36,7 @@ export async function getAudience(): Promise<Audience> {
   if (!user) return fallback;
 
   return {
-    locale: isLocale(user.locale) ? user.locale : fallback.locale,
+    locale: chosen ?? (isLocale(user.locale) ? user.locale : DEFAULT_LOCALE),
     gender: user.gender === "F" || user.gender === "M" ? user.gender : null,
   };
 }
