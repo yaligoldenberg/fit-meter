@@ -112,7 +112,8 @@ export async function GET(req: NextRequest) {
       id: w.id,
       type: w.type,
       duration: w.duration,
-      intensity: w.intensity,
+      // The derived band, not the stored column — old rows carry a self-reported value.
+      intensity: rating.intensity,
       distanceKm: w.distanceKm,
       note: w.note,
       date: w.date.toISOString(),

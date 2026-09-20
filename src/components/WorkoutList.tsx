@@ -8,6 +8,7 @@ import {
   IntensityKey,
   typeLabel,
   intensityLabel,
+  intensityHint,
 } from "@/lib/workoutTypes";
 import { rateWorkout, explainRating, TIER_META } from "@/lib/difficulty";
 import { Locale, StringKey, t } from "@/lib/i18n";
@@ -16,14 +17,14 @@ interface WorkoutItem {
   id: string;
   type: string;
   duration: number;
-  intensity: string;
   distanceKm: number | null;
   note: string | null;
   date: string;
   isRecord?: boolean;
 }
 
-const INTENSITY_BADGE: Record<string, string> = {
+/** Styling for the derived intensity band — see rateWorkout, not the logger. */
+const INTENSITY_BADGE: Record<IntensityKey, string> = {
   LOW: "border-rule text-slate-light",
   MEDIUM: "border-rule text-slate",
   HIGH: "border-flag-red/40 text-flag-red",
@@ -75,10 +76,9 @@ export default function WorkoutList({ workouts, locale }: { workouts: WorkoutIte
       <ul className="divide-y divide-rule border-t border-rule">
         {sorted.map((w) => {
           const typeKey = (w.type in WORKOUT_TYPES ? w.type : "OTHER") as WorkoutTypeKey;
-          const intensityKey = (["LOW", "MEDIUM", "HIGH"].includes(w.intensity)
-            ? w.intensity
-            : "MEDIUM") as IntensityKey;
           const meta = WORKOUT_TYPES[typeKey];
+          // Rated here rather than read off the row, so sessions logged before the app
+          // stopped asking are shown on the same scale as everything since.
           const rating = rateWorkout(w);
           const tier = TIER_META[rating.tier];
           const tierLabel = t(locale, `difficulty_${rating.tier}` as StringKey);
@@ -89,8 +89,11 @@ export default function WorkoutList({ workouts, locale }: { workouts: WorkoutIte
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold text-ink">{typeLabel(typeKey, locale)}</span>
-                  <span className={`${BADGE} ${INTENSITY_BADGE[w.intensity] ?? INTENSITY_BADGE.MEDIUM}`}>
-                    {intensityLabel(intensityKey, locale)}
+                  <span
+                    title={intensityHint(rating.intensity, locale)}
+                    className={`${BADGE} ${INTENSITY_BADGE[rating.intensity]}`}
+                  >
+                    {intensityLabel(rating.intensity, locale)}
                   </span>
                   {w.distanceKm ? (
                     <span className="text-[13px] text-slate num-tabular">

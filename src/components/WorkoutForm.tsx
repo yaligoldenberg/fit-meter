@@ -5,15 +5,12 @@ import { useRouter } from "next/navigation";
 import {
   WORKOUT_TYPE_ORDER,
   WORKOUT_TYPES,
-  INTENSITIES,
   WorkoutTypeKey,
-  IntensityKey,
   typeLabel,
-  intensityLabel,
-  intensityHint,
   usesDistance,
 } from "@/lib/workoutTypes";
-import { Locale, t } from "@/lib/i18n";
+import { rateWorkout, explainRating, TIER_META } from "@/lib/difficulty";
+import { Locale, StringKey, t } from "@/lib/i18n";
 
 function todayLocalISO(): string {
   const d = new Date();
@@ -31,13 +28,21 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
   const [type, setType] = useState<WorkoutTypeKey>("RUNNING");
   const [showAllTypes, setShowAllTypes] = useState(false);
   const [duration, setDuration] = useState("30");
-  const [intensity, setIntensity] = useState<IntensityKey>("MEDIUM");
   const [distanceKm, setDistanceKm] = useState("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(todayLocalISO());
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // The same function the server will run on save, so the number shown while filling the
+  // form is the number that gets stored — the rating is derived, not negotiated.
+  const previewWorkout = {
+    type,
+    duration: Number(duration) || 0,
+    distanceKm: usesDistance(type) && distanceKm ? Number(distanceKm) : null,
+  };
+  const preview = rateWorkout(previewWorkout);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,7 +56,6 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
         body: JSON.stringify({
           type,
           duration: Number(duration),
-          intensity,
           distanceKm: usesDistance(type) && distanceKm ? Number(distanceKm) : null,
           note: note || undefined,
           date: new Date(date).toISOString(),
@@ -110,7 +114,7 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid min-w-0 grid-cols-2 gap-4 sm:grid-cols-4">
         <label className="flex flex-col gap-1.5">
           <span className="caption">{t(locale, "field_duration")}</span>
           <input
@@ -154,30 +158,19 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
         </label>
       </div>
 
-      <div>
-        <p className="caption mb-2.5">{t(locale, "field_intensity")}</p>
-        <div className="flex gap-2">
-          {(Object.keys(INTENSITIES) as IntensityKey[]).map((key) => {
-            const active = intensity === key;
-            return (
-              <button
-                type="button"
-                key={key}
-                title={intensityHint(key, locale)}
-                onClick={() => setIntensity(key)}
-                className={`chip flex-1 justify-center ${
-                  active
-                    ? key === "HIGH"
-                      ? "border-flag-red bg-flag-red text-paper hover:border-flag-red hover:text-paper"
-                      : "chip-on"
-                    : ""
-                }`}
-              >
-                {intensityLabel(key, locale)}
-              </button>
-            );
-          })}
+      <div className="border-t border-rule pt-4">
+        <p className="caption mb-2.5">{t(locale, "effort_computed")}</p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span
+            className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+              TIER_META[preview.tier].className
+            }`}
+          >
+            {t(locale, `difficulty_${preview.tier}` as StringKey)} · {preview.rating}
+          </span>
+          <span className="text-[13px] text-slate">{explainRating(previewWorkout, preview, locale)}</span>
         </div>
+        <p className="mt-2 text-[13px] text-slate-light">{t(locale, "effort_computed_note")}</p>
       </div>
 
       {error && (

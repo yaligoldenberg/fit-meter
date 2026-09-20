@@ -99,6 +99,10 @@ model Workout {
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   type       String
   duration   Int
+  /// LOW | MEDIUM | HIGH, DERIVED by rateWorkout from type/duration/distance and stored
+  /// alongside them — never sent by the client. Rows logged before 2026-09-13 hold the
+  /// self-reported value the app used to ask for, so the research export mixes the two;
+  /// the app itself re-rates on read and never displays this column.
   intensity  String
   distanceKm Float?
   note       String?

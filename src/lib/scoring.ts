@@ -3,7 +3,6 @@ import { rateWorkout, WorkoutRating } from "./difficulty";
 export interface ScorableWorkout {
   type: string;
   duration: number;
-  intensity: string;
   distanceKm?: number | null;
   date: Date;
 }

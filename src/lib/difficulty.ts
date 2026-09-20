@@ -1,11 +1,4 @@
-import {
-  WorkoutTypeKey,
-  IntensityKey,
-  WORKOUT_TYPES,
-  INTENSITIES,
-  typeLabel,
-  intensityLabel,
-} from "./workoutTypes";
+import { WorkoutTypeKey, IntensityKey, WORKOUT_TYPES, typeLabel } from "./workoutTypes";
 
 /**
  * Per-workout difficulty engine.
@@ -16,8 +9,14 @@ import {
  *
  * This is what lets the app say a 20K run is harder than a gym session which is harder
  * than a short interval set, without hand-tuning a weight per activity: the numbers fall
- * out of pace and duration. When distance is logged for a distance-based activity we
- * derive METs from actual speed; otherwise we fall back on the logged intensity.
+ * out of pace and duration.
+ *
+ * Nothing here is self-reported. The app never asks how hard a session felt, because the
+ * answer is both unverifiable and unevenly given: two people doing the identical session
+ * will rate it differently, some inflate it, and a score built on it is neither fair nor
+ * comparable across the leaderboard. Difficulty comes from what can be checked instead —
+ * the activity, how long it lasted, and, where it means something, how fast it was
+ * covered. The same inputs always produce the same number, for everybody.
  *
  * MET values follow the Compendium of Physical Activities (Ainsworth et al., 2011).
  */
@@ -25,7 +24,6 @@ import {
 export interface RateableWorkout {
   type: string;
   duration: number;
-  intensity: string;
   distanceKm?: number | null;
 }
 
@@ -39,46 +37,59 @@ export interface WorkoutRating {
   /** 0–10 headline number for display. */
   rating: number;
   tier: DifficultyTier;
+  /**
+   * The intensity band the engine *derived* for this session. Never an input — it exists
+   * so the UI can put a familiar word next to the number.
+   */
+  intensity: IntensityKey;
   /** Where the METs came from, so the UI can explain the number. */
-  basis: "pace" | "intensity";
-  /** Speed in km/h when distance was logged, else null. */
+  basis: "pace" | "typical";
+  /** Speed in km/h when a usable distance was logged, else null. */
   speedKmh: number | null;
 }
 
 /**
- * METs by logged intensity, used when there's no distance to derive pace from.
+ * The MET map: what each activity costs, per minute, before duration is applied.
  *
- * LOW is the recreational/technique end of each activity, MEDIUM a normal session,
- * HIGH competitive or all-out. Adding an activity means adding one row here plus a
- * label in workoutTypes — nothing else in the app needs to change.
+ * `typical` is the one that does the work — it's what a session of this activity is
+ * assumed to cost when there's no pace to measure, and it's deliberately a single fixed
+ * number so that an hour of strength work is worth exactly an hour of strength work no
+ * matter who logs it.
+ *
+ * `easy` and `hard` are not alternatives to it. They're the reference points the engine
+ * measures a pace-derived MET value against when it labels a session Easy / Moderate /
+ * All-out, and they mark the recreational and competitive ends of the activity.
+ *
+ * Adding an activity means adding one row here plus a label in workoutTypes — nothing
+ * else in the app needs to change.
  */
-const TYPE_METS: Record<WorkoutTypeKey, Record<IntensityKey, number>> = {
-  RUNNING: { LOW: 7.0, MEDIUM: 9.8, HIGH: 12.8 },
-  CYCLING: { LOW: 5.8, MEDIUM: 8.0, HIGH: 12.0 },
-  SWIMMING: { LOW: 5.8, MEDIUM: 8.3, HIGH: 10.3 },
-  WALKING: { LOW: 3.0, MEDIUM: 3.8, HIGH: 5.0 },
+const ACTIVITY_METS: Record<WorkoutTypeKey, { easy: number; typical: number; hard: number }> = {
+  RUNNING: { easy: 7.0, typical: 9.8, hard: 12.8 },
+  CYCLING: { easy: 5.8, typical: 8.0, hard: 12.0 },
+  SWIMMING: { easy: 5.8, typical: 8.3, hard: 10.3 },
+  WALKING: { easy: 3.0, typical: 3.8, hard: 5.0 },
   // Hiking scales with terrain and pack weight rather than speed.
-  HIKING: { LOW: 4.5, MEDIUM: 5.3, HIGH: 7.8 },
-  STRENGTH: { LOW: 3.5, MEDIUM: 5.0, HIGH: 6.0 },
-  CROSSFIT: { LOW: 5.0, MEDIUM: 7.5, HIGH: 9.0 },
-  HIIT: { LOW: 6.0, MEDIUM: 8.0, HIGH: 10.0 },
-  ROWING: { LOW: 4.8, MEDIUM: 7.0, HIGH: 8.5 },
-  ELLIPTICAL: { LOW: 4.6, MEDIUM: 5.0, HIGH: 7.0 },
-  YOGA: { LOW: 2.3, MEDIUM: 3.0, HIGH: 4.0 },
+  HIKING: { easy: 4.5, typical: 5.3, hard: 7.8 },
+  STRENGTH: { easy: 3.5, typical: 5.0, hard: 6.0 },
+  CROSSFIT: { easy: 5.0, typical: 7.5, hard: 9.0 },
+  HIIT: { easy: 6.0, typical: 8.0, hard: 10.0 },
+  ROWING: { easy: 4.8, typical: 7.0, hard: 8.5 },
+  ELLIPTICAL: { easy: 4.6, typical: 5.0, hard: 7.0 },
+  YOGA: { easy: 2.3, typical: 3.0, hard: 4.0 },
   // Pilates sits just above yoga — controlled, but constant core load.
-  PILATES: { LOW: 2.5, MEDIUM: 3.2, HIGH: 4.5 },
+  PILATES: { easy: 2.5, typical: 3.2, hard: 4.5 },
   // Racquet sports: doubles/social at the low end, singles match play at the top.
-  TENNIS: { LOW: 5.0, MEDIUM: 7.3, HIGH: 8.5 },
-  PADEL: { LOW: 4.8, MEDIUM: 6.5, HIGH: 8.0 },
-  SOCCER: { LOW: 6.0, MEDIUM: 7.0, HIGH: 10.0 },
-  BASKETBALL: { LOW: 4.5, MEDIUM: 6.5, HIGH: 8.0 },
-  CLIMBING: { LOW: 5.0, MEDIUM: 7.5, HIGH: 9.0 },
+  TENNIS: { easy: 5.0, typical: 7.3, hard: 8.5 },
+  PADEL: { easy: 4.8, typical: 6.5, hard: 8.0 },
+  SOCCER: { easy: 6.0, typical: 7.0, hard: 10.0 },
+  BASKETBALL: { easy: 4.5, typical: 6.5, hard: 8.0 },
+  CLIMBING: { easy: 5.0, typical: 7.5, hard: 9.0 },
   // Bag work through to full sparring.
-  BOXING: { LOW: 5.5, MEDIUM: 7.8, HIGH: 12.8 },
-  MARTIAL_ARTS: { LOW: 5.3, MEDIUM: 7.8, HIGH: 10.3 },
-  DANCE: { LOW: 3.5, MEDIUM: 5.0, HIGH: 7.8 },
-  SPORT: { LOW: 5.0, MEDIUM: 7.0, HIGH: 10.0 },
-  OTHER: { LOW: 3.5, MEDIUM: 5.0, HIGH: 7.0 },
+  BOXING: { easy: 5.5, typical: 7.8, hard: 12.8 },
+  MARTIAL_ARTS: { easy: 5.3, typical: 7.8, hard: 10.3 },
+  DANCE: { easy: 3.5, typical: 5.0, hard: 7.8 },
+  SPORT: { easy: 5.0, typical: 7.0, hard: 10.0 },
+  OTHER: { easy: 3.5, typical: 5.0, hard: 7.0 },
 };
 
 /** Speed (km/h) → METs, interpolated between points. Only for activities where pace is meaningful. */
@@ -119,6 +130,23 @@ const PACE_METS: Partial<Record<WorkoutTypeKey, [number, number][]>> = {
     [12.0, 8.5],
     [14.0, 12.0],
   ],
+};
+
+/**
+ * Fastest speed (km/h) a person plausibly sustains for a whole logged session, a little
+ * above world-record pace for each activity.
+ *
+ * Pace is now the only lever anyone has on their own difficulty, so it has to be the one
+ * number the engine refuses to believe blindly. A session that comes back faster than
+ * this is a mistyped distance or an attempt to buy METs; either way the pace is thrown
+ * away and the activity's typical cost is used instead, which is never the better deal.
+ */
+const MAX_PLAUSIBLE_KMH: Partial<Record<WorkoutTypeKey, number>> = {
+  RUNNING: 24,
+  CYCLING: 60,
+  SWIMMING: 8,
+  WALKING: 12,
+  ROWING: 20,
 };
 
 /**
@@ -174,27 +202,45 @@ export function tierFor(effort: number): DifficultyTier {
   return "EPIC";
 }
 
-/** Scores a single workout. Same inputs always give the same rating — no user history involved. */
+/**
+ * Which band a MET value falls in for its activity, splitting at the midpoints between
+ * the easy, typical and hard anchors. A session rated off its typical cost always lands
+ * on MEDIUM, which is the honest answer: without a pace there is nothing to distinguish
+ * it from any other session of the same activity.
+ */
+function bandFor(type: WorkoutTypeKey, mets: number): IntensityKey {
+  const { easy, typical, hard } = ACTIVITY_METS[type];
+  if (mets < (easy + typical) / 2) return "LOW";
+  if (mets < (typical + hard) / 2) return "MEDIUM";
+  return "HIGH";
+}
+
+/**
+ * Scores a single workout from facts alone — activity, minutes, distance.
+ *
+ * Same inputs always give the same rating: no user history, no self-report, nothing the
+ * person logging can talk up.
+ */
 export function rateWorkout(w: RateableWorkout): WorkoutRating {
-  const type = (w.type in TYPE_METS ? w.type : "OTHER") as WorkoutTypeKey;
-  const intensity = (w.intensity in TYPE_METS[type] ? w.intensity : "MEDIUM") as IntensityKey;
+  const type = (w.type in ACTIVITY_METS ? w.type : "OTHER") as WorkoutTypeKey;
   const duration = Math.max(0, w.duration);
 
   const paceTable = PACE_METS[type];
   const distance = w.distanceKm ?? 0;
-  const canUsePace = !!paceTable && distance > 0 && duration > 0;
+  const rawSpeed = distance > 0 && duration > 0 ? distance / (duration / 60) : null;
+  const plausible = rawSpeed !== null && rawSpeed <= (MAX_PLAUSIBLE_KMH[type] ?? Infinity);
 
   let mets: number;
-  let basis: "pace" | "intensity";
+  let basis: "pace" | "typical";
   let speedKmh: number | null = null;
 
-  if (canUsePace) {
-    speedKmh = distance / (duration / 60);
-    mets = interpolate(paceTable!, speedKmh);
+  if (paceTable && rawSpeed !== null && plausible) {
+    speedKmh = rawSpeed;
+    mets = interpolate(paceTable, speedKmh);
     basis = "pace";
   } else {
-    mets = TYPE_METS[type][intensity];
-    basis = "intensity";
+    mets = ACTIVITY_METS[type].typical;
+    basis = "typical";
   }
 
   mets = Math.min(MET_CEILING, Math.max(MET_FLOOR, mets));
@@ -205,31 +251,31 @@ export function rateWorkout(w: RateableWorkout): WorkoutRating {
     mets: Math.round(mets * 10) / 10,
     rating: Math.round(Math.min(10, effort / 100) * 10) / 10,
     tier: tierFor(effort),
+    intensity: bandFor(type, mets),
     basis,
     speedKmh: speedKmh === null ? null : Math.round(speedKmh * 10) / 10,
   };
 }
 
-/** One-line explanation of why a workout scored what it did, for tooltips and detail rows. */
+/**
+ * One-line explanation of why a workout scored what it did, for tooltips and detail rows.
+ * It names the inputs the engine actually used, so the number never looks arbitrary and
+ * nobody has to wonder where their own rating went.
+ */
 export function explainRating(
   w: RateableWorkout,
   rating: WorkoutRating,
   locale: "he" | "en" = "en"
 ): string {
   const typeKey = (w.type in WORKOUT_TYPES ? w.type : "OTHER") as WorkoutTypeKey;
-  const intensityKey = (w.intensity in INTENSITIES ? w.intensity : "MEDIUM") as IntensityKey;
   const activity = typeLabel(typeKey, locale);
   const byPace = rating.basis === "pace" && rating.speedKmh !== null;
 
   if (locale === "he") {
-    const how = byPace
-      ? `בקצב ${rating.speedKmh} קמ"ש`
-      : `בעצימות ${intensityLabel(intensityKey, "he")}`;
+    const how = byPace ? `בקצב ${rating.speedKmh} קמ"ש` : "לפי העומס האופייני לפעילות";
     return `${w.duration} דק׳ ${activity} ${how} ≈ ${rating.mets} METs ← ${rating.effort} מאמץ`;
   }
 
-  const how = byPace
-    ? `at ${rating.speedKmh} km/h`
-    : `${INTENSITIES[intensityKey].label.toLowerCase()} effort`;
+  const how = byPace ? `at ${rating.speedKmh} km/h` : "at the activity's typical load";
   return `${w.duration} min of ${activity.toLowerCase()} ${how} ≈ ${rating.mets} METs → ${rating.effort} effort`;
 }

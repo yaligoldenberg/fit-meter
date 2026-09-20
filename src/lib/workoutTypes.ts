@@ -48,12 +48,33 @@ export const WORKOUT_TYPES: Record<WorkoutTypeKey, { label: string; labelHe: str
   OTHER: { label: "Other", labelHe: "אחר", icon: "•" },
 };
 
+/**
+ * Intensity is an OUTPUT, not a question. The app never asks how hard a session felt —
+ * `rateWorkout` in ./difficulty derives the band from the activity and the logged pace,
+ * and these are just the words it gets displayed with. Nothing should ever wire a user
+ * control to this type.
+ */
 export type IntensityKey = "LOW" | "MEDIUM" | "HIGH";
 
 export const INTENSITIES: Record<IntensityKey, { label: string; labelHe: string; hint: string; hintHe: string }> = {
-  LOW: { label: "Easy", labelHe: "קל", hint: "Could hold a full conversation", hintHe: "אפשר לנהל שיחה שלמה" },
-  MEDIUM: { label: "Moderate", labelHe: "בינוני", hint: "Breathing hard, could talk in short sentences", hintHe: "נושמים חזק, מדברים במשפטים קצרים" },
-  HIGH: { label: "All-out", labelHe: "על מלא", hint: "Max effort, couldn't say much", hintHe: "מאמץ מקסימלי, אין אוויר לדבר" },
+  LOW: {
+    label: "Easy",
+    labelHe: "קל",
+    hint: "Gentler than a usual session of this activity",
+    hintHe: "קליל מאימון רגיל בפעילות הזו",
+  },
+  MEDIUM: {
+    label: "Moderate",
+    labelHe: "בינוני",
+    hint: "About what this activity normally costs",
+    hintHe: "בערך העומס הרגיל של הפעילות הזו",
+  },
+  HIGH: {
+    label: "All-out",
+    labelHe: "על מלא",
+    hint: "Well above the usual pace for this activity",
+    hintHe: "הרבה מעל הקצב הרגיל בפעילות הזו",
+  },
 };
 
 /** Order the picker shows — most commonly logged first. */
@@ -88,13 +109,13 @@ export function typeLabel(key: WorkoutTypeKey, locale: "he" | "en"): string {
   return locale === "he" ? meta.labelHe : meta.label;
 }
 
-/** Intensity name in the viewer's language. */
+/** Derived intensity band's name in the viewer's language. */
 export function intensityLabel(key: IntensityKey, locale: "he" | "en"): string {
   const meta = INTENSITIES[key] ?? INTENSITIES.MEDIUM;
   return locale === "he" ? meta.labelHe : meta.label;
 }
 
-/** Intensity hint text in the viewer's language. */
+/** What the derived band means, in the viewer's language — badge tooltips. */
 export function intensityHint(key: IntensityKey, locale: "he" | "en"): string {
   const meta = INTENSITIES[key] ?? INTENSITIES.MEDIUM;
   return locale === "he" ? meta.hintHe : meta.hint;

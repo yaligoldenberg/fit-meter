@@ -63,6 +63,9 @@ async function fetchTable(table: Table): Promise<{ columns: string[]; rows: Reco
       return { columns, rows: rows as unknown as Record<string, unknown>[] };
     }
     case "workouts": {
+      // `intensity` changes meaning at the 2026-09-13 cutover: self-reported before it,
+      // derived by rateWorkout after. Analysis that spans the cutover should re-rate from
+      // type/duration/distanceKm rather than trust the column.
       const columns = ["id", "userId", "type", "duration", "intensity", "distanceKm", "note", "date", "createdAt"];
       const rows = await prisma.workout.findMany({
         select: {

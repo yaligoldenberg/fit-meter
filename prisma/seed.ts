@@ -1,10 +1,10 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { rateWorkout } from "../src/lib/difficulty";
 
 const prisma = new PrismaClient();
 
 const WORKOUT_TYPES = ["RUNNING", "CYCLING", "SWIMMING", "WALKING", "STRENGTH", "HIIT", "YOGA", "SPORT"];
-const INTENSITIES = ["LOW", "MEDIUM", "HIGH"];
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -56,13 +56,18 @@ async function main() {
     const existing = await prisma.workout.count({ where: { userId: user.id } });
     if (existing > 0) continue;
     for (let i = 0; i < count; i++) {
+      // Seeded rows go through the same engine as real ones, so demo data can't sit on a
+      // difficulty the app would never assign.
+      const facts = {
+        type: pick(WORKOUT_TYPES),
+        duration: 20 + Math.floor(Math.random() * 60),
+        distanceKm: Math.random() > 0.5 ? Math.round(Math.random() * 12 * 10) / 10 : null,
+      };
       await prisma.workout.create({
         data: {
           userId: user.id,
-          type: pick(WORKOUT_TYPES),
-          duration: 20 + Math.floor(Math.random() * 60),
-          intensity: pick(INTENSITIES),
-          distanceKm: Math.random() > 0.5 ? Math.round(Math.random() * 12 * 10) / 10 : null,
+          ...facts,
+          intensity: rateWorkout(facts).intensity,
           date: randDate(21),
         },
       });

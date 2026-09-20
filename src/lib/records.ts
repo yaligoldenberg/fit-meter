@@ -13,7 +13,6 @@ export interface RecordWorkout {
   id: string;
   type: string;
   duration: number;
-  intensity: string;
   distanceKm?: number | null;
   date: Date;
 }

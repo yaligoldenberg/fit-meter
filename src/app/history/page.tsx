@@ -7,11 +7,10 @@ import { scoreWindow, trailingWindow, gradeColor } from "@/lib/scoring";
 import { evaluateWeekTitle, tierColor } from "@/lib/weeklyTitles";
 import {
   WORKOUT_TYPES,
-  INTENSITIES,
   WorkoutTypeKey,
-  IntensityKey,
   typeLabel,
   intensityLabel,
+  intensityHint,
 } from "@/lib/workoutTypes";
 import { rateWorkout, explainRating, TIER_META } from "@/lib/difficulty";
 import { t, tn, Locale } from "@/lib/i18n";
@@ -223,7 +222,6 @@ export default async function HistoryPage({
                     <div className="mt-2.5 divide-y divide-rule border-t border-rule">
                       {group.workouts.map((w) => {
                         const typeKey = (w.type in WORKOUT_TYPES ? w.type : "OTHER") as WorkoutTypeKey;
-                        const intensityKey = (w.intensity in INTENSITIES ? w.intensity : "MEDIUM") as IntensityKey;
                         const typeIcon = WORKOUT_TYPES[typeKey].icon;
                         const rating = rateWorkout(w);
                         const tier = TIER_META[rating.tier];
@@ -234,8 +232,11 @@ export default async function HistoryPage({
                             <span className="text-sm text-slate num-tabular">
                               {w.duration} {t(audience.locale, "unit_min")}
                             </span>
-                            <span className="text-sm text-slate-light">
-                              {intensityLabel(intensityKey, audience.locale)}
+                            <span
+                              title={intensityHint(rating.intensity, audience.locale)}
+                              className="text-sm text-slate-light"
+                            >
+                              {intensityLabel(rating.intensity, audience.locale)}
                             </span>
                             {w.distanceKm != null && (
                               <span className="text-sm text-slate num-tabular">
