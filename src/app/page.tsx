@@ -19,18 +19,20 @@ export default async function LandingPage() {
   return (
     <main className="min-h-screen bg-canvas">
       <header className="sticky top-0 z-30 border-b border-rule bg-canvas/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4 md:px-10">
-          <Wordmark />
-          <nav className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-6 py-4 sm:gap-4 md:px-10">
+          <Wordmark size="text-2xl sm:text-3xl" />
+          <nav className="flex items-center gap-2 sm:gap-3">
             <LanguageToggle locale={locale} />
             <ThemeToggle locale={locale} />
             <Link
               href="/login"
-              className="text-sm font-semibold text-slate transition-colors hover:text-ink"
+              className="hidden text-sm font-semibold text-slate transition-colors hover:text-ink sm:block"
             >
               {t(locale, "login")}
             </Link>
-            <Link href="/register" className="btn-primary">
+            {/* The hero repeats both of these a screen-height below, so the header can drop
+                them on phones instead of overflowing the viewport. */}
+            <Link href="/register" className="btn-primary hidden sm:inline-flex">
               {t(locale, "land_signup")}
             </Link>
           </nav>

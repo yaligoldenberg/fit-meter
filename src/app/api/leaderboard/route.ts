@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
 
   const weekOffset = Number(req.nextUrl.searchParams.get("weekOffset") ?? "0") || 0;
   const groupId = req.nextUrl.searchParams.get("groupId");
+  // `all` ranks every account on the app; anything else keeps the friends board.
+  const everyone = !groupId && req.nextUrl.searchParams.get("scope") === "all";
   const { start, end } = trailingWindow(new Date(), weekOffset);
 
   const me = await prisma.user.findUnique({
@@ -55,6 +57,9 @@ export async function GET(req: NextRequest) {
       select: { user: { select: PERSON_FIELDS } },
     });
     for (const m of members) peopleMap.set(m.user.id, m.user);
+  } else if (everyone) {
+    const users = await prisma.user.findMany({ select: PERSON_FIELDS });
+    for (const u of users) peopleMap.set(u.id, u);
   } else {
     const relations = await prisma.friendship.findMany({
       where: {
@@ -96,13 +101,17 @@ export async function GET(req: NextRequest) {
     return { ...person, isMe: person.id === session.userId, ...result };
   });
 
-  results.sort((a, b) => b.score - a.score || b.effort - a.effort);
+  // Name breaks the tie so the zero-score tail (long on the everyone board) is stable
+  // between reloads instead of reshuffling with query order.
+  results.sort(
+    (a, b) => b.score - a.score || b.effort - a.effort || a.displayName.localeCompare(b.displayName)
+  );
   const ranked = results.map((r, i) => ({ ...r, rank: i + 1 }));
 
   await recordEvent(session.userId, "LEADERBOARD_VIEW", {
     condition: me.condition,
     source: "api",
-    scope: groupId ? "group" : "friends",
+    scope: groupId ? "group" : everyone ? "all" : "friends",
     groupId: groupId ?? undefined,
     people: ranked.length,
   });

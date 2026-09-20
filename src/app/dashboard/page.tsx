@@ -114,7 +114,7 @@ export default async function DashboardPage() {
   // Streaks and records both span the user's whole history, so one query serves both.
   const history = await prisma.workout.findMany({
     where: { userId: session.userId },
-    select: { id: true, type: true, duration: true, intensity: true, distanceKm: true, date: true },
+    select: { id: true, type: true, duration: true, distanceKm: true, date: true },
   });
   const streak = computeStreak(history);
   const records = computeRecords(history);
@@ -185,7 +185,7 @@ export default async function DashboardPage() {
 
             {view.showScore && (
               <>
-                <div className={`grid grid-cols-3 gap-5 ${view.showTitles ? "mt-7" : ""}`}>
+                <div className={`grid gap-4 sm:grid-cols-3 sm:gap-5 ${view.showTitles ? "mt-7" : ""}`}>
                   <StatBar label={t(audience.locale, "bar_volume")} value={result.volumePoints} max={70} />
                   <StatBar label={t(audience.locale, "bar_consistency")} value={result.consistencyPoints} max={20} />
                   <StatBar label={t(audience.locale, "bar_variety")} value={result.varietyPoints} max={10} />
@@ -249,7 +249,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 function StatBar({ label, value, max }: { label: string; value: number; max: number }) {
   const pct = Math.min(100, Math.round((value / max) * 100));
   return (
-    <div>
+    <div className="min-w-0">
       <div className="flex items-baseline justify-between gap-2">
         <p className="text-[13px] text-slate">{label}</p>
         <p className="text-[13px] text-slate num-tabular">

@@ -91,9 +91,25 @@
   color: rgb(var(--c-canvas));
 }
 
+/* Nothing may widen the page. `clip` rather than `hidden`, so the sticky header keeps
+   sticking — `hidden` would turn <body> into the scroll container it sticks to. */
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   background-color: rgb(var(--c-canvas));
   color: rgb(var(--c-ink));
+}
+
+/* Native date and number inputs report an intrinsic width; without this a two-up
+   grid on a 360px phone refuses to shrink and pushes the sheet past the edge. */
+input,
+select,
+textarea {
+  min-width: 0;
+  max-width: 100%;
 }
 
 :focus-visible {

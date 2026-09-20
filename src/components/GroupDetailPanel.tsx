@@ -124,7 +124,7 @@ export default function GroupDetailPanel({
           </form>
         ) : (
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="font-display text-5xl leading-none text-ink">{name}</h1>
+            <h1 className="min-w-0 break-words font-display text-4xl leading-none text-ink sm:text-5xl">{name}</h1>
             {isOwner && (
               <button
                 onClick={() => setRenaming(true)}

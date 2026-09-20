@@ -155,11 +155,11 @@ export default function FriendsPanel({ locale }: { locale: Locale }) {
               <ul className="mt-4 flex flex-col divide-y divide-rule">
                 {data.incoming.map((p) => (
                   <li key={p.friendshipId} className="flex items-center justify-between gap-3 py-3">
-                    <div>
-                      <p className="font-semibold text-ink">{p.displayName}</p>
-                      <p className="text-[13px] text-slate-light">@{p.username}</p>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-ink">{p.displayName}</p>
+                      <p className="truncate text-[13px] text-slate-light">@{p.username}</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex shrink-0 gap-2">
                       <button
                         onClick={() => respond(p.friendshipId, "accept")}
                         disabled={pendingAction === p.friendshipId + "accept"}
@@ -188,9 +188,9 @@ export default function FriendsPanel({ locale }: { locale: Locale }) {
               <ul className="mt-4 flex flex-col divide-y divide-rule">
                 {data.outgoing.map((p) => (
                   <li key={p.friendshipId} className="flex items-center justify-between gap-3 py-3">
-                    <div>
-                      <p className="font-semibold text-ink">{p.displayName}</p>
-                      <p className="text-[13px] text-slate-light">@{p.username}</p>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-ink">{p.displayName}</p>
+                      <p className="truncate text-[13px] text-slate-light">@{p.username}</p>
                     </div>
                     <button
                       onClick={() => remove(p.friendshipId)}
@@ -214,19 +214,19 @@ export default function FriendsPanel({ locale }: { locale: Locale }) {
               <ul className="mt-4 flex flex-col divide-y divide-rule">
                 {data.friends.map((p) => (
                   <li key={p.friendshipId} className="group flex items-center justify-between gap-3 py-3">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full border border-rule text-[13px] font-semibold text-slate">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-rule text-[13px] font-semibold text-slate">
                         {initials(p.displayName)}
                       </span>
-                      <div>
-                        <p className="font-semibold text-ink">{p.displayName}</p>
-                        <p className="text-[13px] text-slate-light">@{p.username}</p>
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-ink">{p.displayName}</p>
+                        <p className="truncate text-[13px] text-slate-light">@{p.username}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => remove(p.friendshipId)}
                       disabled={pendingAction === p.friendshipId + "remove"}
-                      className="text-xs font-semibold text-slate-light opacity-0 transition hover:text-flag-red group-hover:opacity-100 disabled:opacity-50"
+                      className="shrink-0 text-xs font-semibold text-slate-light opacity-0 transition hover:text-flag-red group-hover:opacity-100 disabled:opacity-50"
                     >
                       {t(locale, "remove")}
                     </button>

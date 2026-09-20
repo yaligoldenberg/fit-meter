@@ -54,13 +54,26 @@ export default function AppNav({
     router.refresh();
   }
 
+  const logoutButton = (extra: string) => (
+    <button
+      onClick={logout}
+      className={`shrink-0 text-sm text-slate underline-offset-4 transition-colors hover:text-flag-red hover:underline ${extra}`}
+    >
+      {t(locale, "nav_logout")}
+    </button>
+  );
+
   return (
     <header className="sticky top-0 z-30 border-b border-rule bg-canvas/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4 md:px-8">
-        <Link href="/dashboard" aria-label="FitMeter">
-          <Wordmark size="text-2xl" />
+      {/* Nothing in this row may refuse to shrink: on a 360px phone the wordmark, both
+          toggles and the username only fit if the username gives way and truncates. */}
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-6 py-4 sm:gap-4 md:px-8">
+        <Link href="/dashboard" aria-label="FitMeter" className="shrink-0">
+          <Wordmark size="text-xl sm:text-2xl" />
         </Link>
-        <nav className="hidden items-center gap-6 md:flex">
+        {/* Seven links plus the account cluster need about 950px, so tablets in
+            portrait get the phone strip below rather than a squeezed row. */}
+        <nav className="hidden items-center gap-6 lg:flex">
           {links.map((link) => {
             const active = pathname.startsWith(link.href);
             return (
@@ -79,10 +92,8 @@ export default function AppNav({
             );
           })}
         </nav>
-        <div className="flex items-center gap-3">
-          <LanguageToggle locale={locale} />
-          <ThemeToggle locale={locale} />
-          <div className="max-w-[8rem] text-end leading-tight sm:max-w-[11rem]">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <div className="min-w-0 max-w-[8rem] text-end leading-tight sm:max-w-[11rem]">
             <span className="hidden truncate text-[13px] font-semibold text-ink sm:block">
               {displayName}
             </span>
@@ -93,31 +104,36 @@ export default function AppNav({
               @{username}
             </span>
           </div>
-          <button
-            onClick={logout}
-            className="text-sm text-slate underline-offset-4 transition-colors hover:text-flag-red hover:underline"
-          >
-            {t(locale, "nav_logout")}
-          </button>
+          <div className="shrink-0">
+            <LanguageToggle locale={locale} />
+          </div>
+          <div className="shrink-0">
+            <ThemeToggle locale={locale} />
+          </div>
+          {/* On phones this moves down to the link strip, where there is room for it. */}
+          {logoutButton("hidden lg:block")}
         </div>
       </div>
-      <nav className="flex items-center gap-5 overflow-x-auto border-t border-rule px-6 py-2.5 md:hidden">
-        {links.map((link) => {
-          const active = pathname.startsWith(link.href);
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              aria-current={active ? "page" : undefined}
-              className={`whitespace-nowrap border-b-2 pb-0.5 text-sm ${
-                active ? "border-signal font-semibold text-ink" : "border-transparent text-slate"
-              }`}
-            >
-              {t(locale, link.key)}
-            </Link>
-          );
-        })}
-      </nav>
+      <div className="flex items-center border-t border-rule lg:hidden">
+        <nav className="flex min-w-0 flex-1 items-center gap-5 overflow-x-auto px-6 py-2.5">
+          {links.map((link) => {
+            const active = pathname.startsWith(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={active ? "page" : undefined}
+                className={`whitespace-nowrap border-b-2 pb-0.5 text-sm ${
+                  active ? "border-signal font-semibold text-ink" : "border-transparent text-slate"
+                }`}
+              >
+                {t(locale, link.key)}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="border-s border-rule px-4 py-2.5">{logoutButton("")}</div>
+      </div>
     </header>
   );
 }
