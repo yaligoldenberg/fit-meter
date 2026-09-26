@@ -9,9 +9,9 @@ import Wordmark from "./Wordmark";
 
 const LINKS = [
   { href: "/dashboard", key: "nav_dashboard" },
-  { href: "/history", key: "nav_history" },
-  { href: "/ranks", key: "nav_ranks" },
   { href: "/leaderboard", key: "nav_leaderboard" },
+  { href: "/ranks", key: "nav_ranks" },
+  { href: "/history", key: "nav_history" },
   { href: "/feed", key: "nav_feed" },
   { href: "/friends", key: "nav_friends" },
   { href: "/groups", key: "nav_groups" },
