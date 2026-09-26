@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { jwtSecret } from "@/lib/jwtSecret";
 
 const SESSION_COOKIE = "fitmeter_session";
-const secret = new TextEncoder().encode(process.env.JWT_SECRET || "dev-only-secret");
 
 const PROTECTED_PATHS = ["/dashboard", "/history", "/friends", "/groups", "/leaderboard", "/feed", "/ranks", "/profile"];
 const AUTH_PATHS = ["/login", "/register"];
@@ -11,7 +11,8 @@ async function isAuthed(req: NextRequest): Promise<boolean> {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return false;
   try {
-    await jwtVerify(token, secret);
+    // A missing secret in production throws here and reads as signed out — fail closed.
+    await jwtVerify(token, jwtSecret());
     return true;
   } catch {
     return false;

@@ -3,9 +3,9 @@ import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { prisma } from "./db";
+import { jwtSecret } from "./jwtSecret";
 
 export const SESSION_COOKIE = "fitmeter_session";
-const secret = new TextEncoder().encode(process.env.JWT_SECRET || "dev-only-secret");
 
 export interface SessionPayload {
   userId: string;
@@ -30,12 +30,12 @@ export async function createSessionToken(payload: SessionPayload): Promise<strin
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("30d")
-    .sign(secret);
+    .sign(jwtSecret());
 }
 
 export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, jwtSecret());
     if (typeof payload.userId === "string" && typeof payload.username === "string") {
       // Tokens issued before sessionVersion existed carry no `sv`; they count as version
       // 0, the column's default, so the deploy that added it didn't sign everyone out.
