@@ -14,6 +14,7 @@ import AppNav from "@/components/AppNav";
 import ScoreGauge from "@/components/ScoreGauge";
 import WorkoutForm from "@/components/WorkoutForm";
 import PushToggle from "@/components/PushToggle";
+import InstallPrompt from "@/components/InstallPrompt";
 import { vapidPublicKey } from "@/lib/push";
 import { toWorkoutTypeKey } from "@/lib/workoutTypes";
 import WorkoutList from "@/components/WorkoutList";
@@ -166,6 +167,7 @@ export default async function DashboardPage() {
       />
       <main className="mx-auto max-w-5xl px-6 py-10 md:px-8">
         {audience.gender === null && <GenderPrompt locale={audience.locale} />}
+        <InstallPrompt locale={audience.locale} />
         {view.showScore && (
           <div className="mb-5 grid gap-4 md:grid-cols-2">
             <StreakBadge streak={streak} locale={audience.locale} />
