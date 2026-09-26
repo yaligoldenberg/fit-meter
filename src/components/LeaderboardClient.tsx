@@ -113,7 +113,7 @@ export default function LeaderboardClient({
   /** Scope the board to one group instead of the friends / everyone toggle. */
   groupId?: string;
 }) {
-  const [scope, setScope] = useState<Scope>("friends");
+  const [scope, setScope] = useState<Scope>("all");
   const [weekOffset, setWeekOffset] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [data, setData] = useState<LeaderboardResponse | null>(null);
@@ -173,7 +173,7 @@ export default function LeaderboardClient({
 
       {!groupId && (
         <div className="mt-5 flex gap-2" role="group" aria-label={t(locale, "leaderboard_title")}>
-          {(["friends", "all"] as const).map((option) => (
+          {(["all", "friends"] as const).map((option) => (
             <button
               key={option}
               type="button"

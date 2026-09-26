@@ -16,6 +16,16 @@ services:
       # Gates /api/research/*. Set by hand in the dashboard — never commit the value.
       - key: RESEARCH_TOKEN
         sync: false
+      # Web Push (morning winner). Generate with `npx web-push generate-vapid-keys`; the
+      # public key is served to browsers, the private key signs pushes. Set by hand.
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      # Shared with the Supabase pg_cron job (stored in Vault as push_cron_secret) that
+      # calls /api/push/morning. Set by hand; never commit the value.
+      - key: PUSH_CRON_SECRET
+        sync: false
       - key: NODE_ENV
         value: production
 

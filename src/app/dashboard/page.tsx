@@ -13,6 +13,8 @@ import { t } from "@/lib/i18n";
 import AppNav from "@/components/AppNav";
 import ScoreGauge from "@/components/ScoreGauge";
 import WorkoutForm from "@/components/WorkoutForm";
+import PushToggle from "@/components/PushToggle";
+import { vapidPublicKey } from "@/lib/push";
 import { toWorkoutTypeKey } from "@/lib/workoutTypes";
 import WorkoutList from "@/components/WorkoutList";
 import WeekTitleBadge from "@/components/WeekTitleBadge";
@@ -222,6 +224,12 @@ export default async function DashboardPage() {
             <WorkoutForm locale={audience.locale} recentTypes={recentTypes} />
           </div>
         </section>
+
+        {view.showLeaderboard && (
+          <div className="mt-5">
+            <PushToggle locale={audience.locale} vapidPublicKey={vapidPublicKey()} compact />
+          </div>
+        )}
 
         {view.showScore && (
           <section className="mt-5">

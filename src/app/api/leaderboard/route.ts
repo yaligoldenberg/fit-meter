@@ -2,19 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { viewFor, recordEvent } from "@/lib/research";
-import { scoreWindow, trailingWindow, ScorableWorkout } from "@/lib/scoring";
+import { trailingWindow } from "@/lib/scoring";
+import { rankPeople, LeaderboardPerson, PERSON_FIELDS } from "@/lib/leaderboard";
 import { getAudience } from "@/lib/audience";
 import { apiError } from "@/lib/apiErrors";
 import { membershipOf } from "@/lib/groups";
-
-interface Person {
-  id: string;
-  username: string;
-  displayName: string;
-  gender: string | null;
-}
-
-const PERSON_FIELDS = { id: true, username: true, displayName: true, gender: true } as const;
 
 export async function GET(req: NextRequest) {
   const { locale } = await getAudience();
@@ -39,7 +31,7 @@ export async function GET(req: NextRequest) {
   }
 
   const { condition: _condition, ...meRow } = me;
-  const peopleMap = new Map<string, Person>();
+  const peopleMap = new Map<string, LeaderboardPerson>();
   peopleMap.set(meRow.id, meRow);
 
   let groupName: string | null = null;
@@ -78,35 +70,10 @@ export async function GET(req: NextRequest) {
   }
 
   const people = Array.from(peopleMap.values());
-  const ids = people.map((p) => p.id);
-
-  // One query for everyone's workouts in the window instead of one per person — with the
-  // DB in a different region, a per-person round trip adds up fast on a big group.
-  const allWorkouts = ids.length
-    ? await prisma.workout.findMany({
-        where: { userId: { in: ids }, date: { gte: start, lt: end } },
-      })
-    : [];
-
-  const workoutsByUser = new Map<string, ScorableWorkout[]>();
-  for (const w of allWorkouts) {
-    const list = workoutsByUser.get(w.userId);
-    if (list) list.push(w);
-    else workoutsByUser.set(w.userId, [w]);
-  }
-
-  const results = people.map((person) => {
-    const workouts = workoutsByUser.get(person.id) ?? [];
-    const result = scoreWindow(workouts);
-    return { ...person, isMe: person.id === session.userId, ...result };
-  });
-
-  // Name breaks the tie so the zero-score tail (long on the everyone board) is stable
-  // between reloads instead of reshuffling with query order.
-  results.sort(
-    (a, b) => b.score - a.score || b.effort - a.effort || a.displayName.localeCompare(b.displayName)
-  );
-  const ranked = results.map((r, i) => ({ ...r, rank: i + 1 }));
+  const ranked = (await rankPeople(people, { start, end })).map((r) => ({
+    ...r,
+    isMe: r.id === session.userId,
+  }));
 
   await recordEvent(session.userId, "LEADERBOARD_VIEW", {
     condition: me.condition,

@@ -6,6 +6,8 @@ import { viewFor } from "@/lib/research";
 import { t } from "@/lib/i18n";
 import AppNav from "@/components/AppNav";
 import ProfileForm from "@/components/ProfileForm";
+import PushToggle from "@/components/PushToggle";
+import { vapidPublicKey } from "@/lib/push";
 
 /** Your own account: rename yourself. Other people's pages live at /profile/[username]. */
 export default async function ProfilePage() {
@@ -42,6 +44,11 @@ export default async function ProfilePage() {
             username={user.username}
           />
         </section>
+        {view.showLeaderboard && (
+          <section className="sheet mt-5 p-6 md:p-9">
+            <PushToggle locale={audience.locale} vapidPublicKey={vapidPublicKey()} />
+          </section>
+        )}
       </main>
     </>
   );

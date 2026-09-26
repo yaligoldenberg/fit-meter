@@ -26,15 +26,16 @@ model User {
   goalValue    Int?
   createdAt    DateTime @default(now())
 
-  workouts         Workout[]
-  reactions        Reaction[]
-  comments         Comment[]
-  events           Event[]
-  passwordResets   PasswordReset[]
-  sentRequests     Friendship[]    @relation("Requester")
-  receivedRequests Friendship[]    @relation("Addressee")
-  ownedGroups      Group[]         @relation("GroupOwner")
-  groupMemberships GroupMember[]
+  workouts          Workout[]
+  reactions         Reaction[]
+  comments          Comment[]
+  events            Event[]
+  passwordResets    PasswordReset[]
+  sentRequests      Friendship[]       @relation("Requester")
+  receivedRequests  Friendship[]       @relation("Addressee")
+  ownedGroups       Group[]            @relation("GroupOwner")
+  groupMemberships  GroupMember[]
+  pushSubscriptions PushSubscription[]
 }
 
 /// A named group with its own leaderboard. Unlike friendship, membership is not
@@ -153,4 +154,28 @@ model Friendship {
   createdAt   DateTime @default(now())
 
   @@unique([requesterId, addresseeId])
+}
+
+/// A browser that agreed to receive the morning winner notification. One user can have
+/// several (phone + laptop). Rows whose push service answers 404/410 are deleted on send.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// One row per Israel calendar day the morning push went out. The day is the primary
+/// key, so a second trigger on the same morning (the cron fires at both 04:00 and 05:00
+/// UTC to survive daylight saving) fails the insert and sends nothing.
+model DailyPush {
+  day       String   @id
+  winnerId  String?
+  sent      Int      @default(0)
+  createdAt DateTime @default(now())
 }
