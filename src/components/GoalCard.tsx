@@ -132,7 +132,7 @@ export default function GoalCard({
 
       <div className="meter mt-3">
         <div
-          className={`h-full transition-all duration-700 ${progress.met ? "bg-flag-green" : "bg-signal"}`}
+          className="h-full bg-signal transition-all duration-700"
           style={{ width: `${Math.max(3, progress.percent)}%` }}
         />
       </div>

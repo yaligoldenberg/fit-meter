@@ -17,10 +17,10 @@ import RankLadder from "@/components/RankLadder";
  */
 export default async function RanksPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/expired");
 
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
-  if (!user) redirect("/login");
+  if (!user) redirect("/api/auth/expired");
 
   const view = viewFor(user.condition);
   if (!view.showTitles) redirect("/dashboard");

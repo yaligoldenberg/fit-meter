@@ -89,7 +89,7 @@ export async function PATCH(req: NextRequest) {
 
   const res = NextResponse.json({ user });
   if (data.username) {
-    const token = await createSessionToken({ userId: user.id, username: user.username });
+    const token = await createSessionToken({ userId: user.id, username: user.username, sv: session.sv });
     res.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,
       sameSite: "lax",

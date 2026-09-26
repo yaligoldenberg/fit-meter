@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { Rubik } from "next/font/google";
-import { LOCALE_COOKIE, DEFAULT_LOCALE, isLocale, dirFor } from "@/lib/i18n";
+import { dirFor } from "@/lib/i18n";
+import { getAudience } from "@/lib/audience";
 import { THEME_COOKIE, THEME_BOOTSTRAP, isTheme } from "@/lib/theme";
 import "./globals.css";
 
@@ -25,8 +26,9 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const jar = await cookies();
-  const cookieLocale = jar.get(LOCALE_COOKIE)?.value;
-  const locale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
+  // The same resolution the pages use (cookie, else the signed-in user's stored
+  // preference), so lang/dir can't disagree with the strings rendered inside them.
+  const { locale } = await getAudience();
   const cookieTheme = jar.get(THEME_COOKIE)?.value;
 
   return (

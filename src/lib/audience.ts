@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { getSession } from "./auth";
 import { prisma } from "./db";
@@ -18,7 +19,7 @@ export interface Audience {
  * the user record failed or lagged. The stored value still covers a fresh device,
  * where there is no cookie yet.
  */
-export async function getAudience(): Promise<Audience> {
+export const getAudience = cache(async (): Promise<Audience> => {
   const cookieLocale = (await cookies()).get(LOCALE_COOKIE)?.value;
   const chosen = isLocale(cookieLocale) ? cookieLocale : null;
   const fallback: Audience = {
@@ -39,4 +40,4 @@ export async function getAudience(): Promise<Audience> {
     locale: chosen ?? (isLocale(user.locale) ? user.locale : DEFAULT_LOCALE),
     gender: user.gender === "F" || user.gender === "M" ? user.gender : null,
   };
-}
+});

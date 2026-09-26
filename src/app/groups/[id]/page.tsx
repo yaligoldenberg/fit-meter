@@ -10,13 +10,13 @@ import LeaderboardClient from "@/components/LeaderboardClient";
 
 export default async function GroupPage({ params }: { params: { id: string } }) {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/expired");
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
     select: { displayName: true, username: true, condition: true },
   });
-  if (!user) redirect("/login");
+  if (!user) redirect("/api/auth/expired");
 
   // 404 covers both "no such group" and "not a member" — a stranger poking at ids
   // should not be able to tell the two apart.

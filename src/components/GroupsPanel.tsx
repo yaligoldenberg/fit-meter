@@ -19,15 +19,19 @@ export default function GroupsPanel({ locale }: { locale: Locale }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // A failed load is its own state: showing "No groups yet" would tell someone with
+  // groups that they have none, and nudge them into making a duplicate.
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
+    setLoadError(false);
     try {
       const res = await fetch("/api/groups");
       if (!res.ok) throw new Error();
       const json = await res.json();
       setGroups(json.groups);
     } catch {
-      setGroups([]);
+      setLoadError(true);
     }
   }, []);
 
@@ -136,7 +140,16 @@ export default function GroupsPanel({ locale }: { locale: Locale }) {
         <p className="border-s-[3px] border-flag-red bg-chalk px-4 py-3 text-sm text-flag-red">{error}</p>
       )}
 
-      {groups === null && (
+      {loadError && (
+        <div className="sheet p-6">
+          <p className="text-sm text-flag-red">{t(locale, "groups_load_error")}</p>
+          <button onClick={load} className="mt-3 btn-quiet">
+            {t(locale, "retry")}
+          </button>
+        </div>
+      )}
+
+      {groups === null && !loadError && (
         <div className="space-y-3">
           {[0, 1].map((i) => (
             <div key={i} className="h-20 animate-pulse rounded-xl bg-chalk" />
@@ -144,7 +157,7 @@ export default function GroupsPanel({ locale }: { locale: Locale }) {
         </div>
       )}
 
-      {groups !== null && groups.length === 0 && (
+      {groups !== null && groups.length === 0 && !loadError && (
         <div className="flex flex-col items-center gap-2 sheet py-14 text-center">
           <p className="font-display text-3xl leading-none text-ink">{t(locale, "groups_empty")}</p>
           <p className="max-w-xs text-sm text-slate">{t(locale, "groups_empty_hint")}</p>

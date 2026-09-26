@@ -172,20 +172,46 @@ const PACE_METS: Partial<Record<WorkoutTypeKey, [number, number][]>> = {
 
 /**
  * Fastest speed (km/h) a person plausibly sustains for a whole logged session, a little
- * above world-record pace for each activity.
+ * above world-record pace for each activity. Every activity in TYPES_WITH_DISTANCE has
+ * a row; one without a row has no believable distance at all.
  *
  * Pace is now the only lever anyone has on their own difficulty, so it has to be the one
  * number the engine refuses to believe blindly. A session that comes back faster than
  * this is a mistyped distance or an attempt to buy METs; either way the pace is thrown
  * away and the activity's typical cost is used instead, which is never the better deal.
+ * The same test keeps such a distance out of distance goals and "Furthest" records.
  */
 const MAX_PLAUSIBLE_KMH: Partial<Record<WorkoutTypeKey, number>> = {
   RUNNING: 24,
+  // Terrain and climbing only slow a trail runner down.
+  TRAIL_RUNNING: 22,
   CYCLING: 60,
+  MOUNTAIN_BIKING: 45,
   SWIMMING: 8,
   WALKING: 12,
+  // A fast hiker is a walker on worse ground.
+  HIKING: 12,
   ROWING: 20,
+  // Averaged over swim, bike and run together; elite sprint races come in under 30.
+  TRIATHLON: 35,
+  // Sprint K1 averages about 18 km/h over 1000 m, for barely three minutes.
+  KAYAKING: 20,
+  SUP: 14,
+  // Long-track ice and inline marathons both average in the mid-40s.
+  SKATING: 50,
 };
+
+/**
+ * The distance a workout can be credited with: what was logged, or 0 when the activity
+ * doesn't take a distance or the implied pace is beyond anyone. Distance goals and
+ * "Furthest" records count through here, so a stray extra zero can't top either.
+ */
+export function plausibleDistanceKm(w: RateableWorkout): number {
+  const distance = w.distanceKm ?? 0;
+  const cap = MAX_PLAUSIBLE_KMH[w.type as WorkoutTypeKey];
+  if (distance <= 0 || w.duration <= 0 || cap === undefined) return 0;
+  return distance / (w.duration / 60) <= cap ? distance : 0;
+}
 
 /**
  * Long sessions cost more than their minutes suggest — fatigue, fuelling and impact all

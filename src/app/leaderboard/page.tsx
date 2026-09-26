@@ -8,13 +8,13 @@ import LeaderboardClient from "@/components/LeaderboardClient";
 
 export default async function LeaderboardPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/expired");
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
     select: { displayName: true, username: true, condition: true },
   });
-  if (!user) redirect("/login");
+  if (!user) redirect("/api/auth/expired");
 
   const view = viewFor(user.condition);
   if (!view.showLeaderboard) redirect("/dashboard");

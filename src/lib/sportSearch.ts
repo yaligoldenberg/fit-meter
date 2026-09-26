@@ -7,7 +7,8 @@ import { WORKOUT_TYPES, WORKOUT_TYPE_ORDER, WorkoutTypeKey } from "./workoutType
  * Hebrew UI and "ספינינג" in the English one. Matching is tiered so the obvious answer
  * wins: an exact name, then a name that starts with what was typed, then any word in it
  * that does, then the letters appearing anywhere (spaces ignored, so "cross fit" finds
- * CrossFit), and last a one-or-two-letter typo allowance ("pilatis", "hirox").
+ * CrossFit), and last a one-or-two-letter typo allowance ("pilatis", "hirox"). A phrase
+ * that matches nothing whole is retried word by word, so "מכון כושר" finds the gym.
  */
 
 export interface SportMatch {
@@ -103,6 +104,9 @@ function typoDistance(t: Term, qCompact: string, max: number): number {
 
 type Scored = { key: WorkoutTypeKey; via: string | null; score: number; order: number };
 
+/** A word at or above this tier (starts a word of the name) counts as a strong match. */
+const STRONG_MATCH = 80;
+
 function rank(score: (t: Term) => number): Scored[] {
   const results: Scored[] = [];
   INDEX.forEach(({ key, terms }, order) => {
@@ -126,12 +130,45 @@ function rank(score: (t: Term) => number): Scored[] {
   return results.sort((a, b) => b.score - a.score || a.order - b.order);
 }
 
+/**
+ * Several words that don't match as one phrase ("מכון כושר", "ריצה קלה"): every word has
+ * to match the sport on its own, each scored by the same tiers, and the sport ranks by its
+ * weakest word. A word that matches no sport at all is dropped — "קלה" is a description,
+ * not a sport — as long as another word matches something strongly.
+ */
+function rankByWords(words: string[]): Scored[] {
+  const perWord = words.map((w) => rank((t) => scoreTerm(t, w, w)));
+  const strong = perWord.some((results) => results.some((r) => r.score >= STRONG_MATCH));
+  const kept = strong ? perWord.filter((results) => results.length > 0) : perWord;
+  if (kept.length === 0 || kept.some((results) => results.length === 0)) return [];
+
+  const [first, ...rest] = kept;
+  const results: Scored[] = [];
+  for (const candidate of first) {
+    let score = candidate.score;
+    let via = candidate.via;
+    for (const results of rest) {
+      const match = results.find((r) => r.key === candidate.key);
+      if (!match) {
+        score = 0;
+        break;
+      }
+      score = Math.min(score, match.score);
+      via = via ?? match.via;
+    }
+    if (score > 0) results.push({ ...candidate, via, score });
+  }
+  return results.sort((a, b) => b.score - a.score || a.order - b.order);
+}
+
 export function searchSports(query: string): SportMatch[] {
   const q = normalize(query);
   if (!q) return [];
   const qCompact = q.replace(/ /g, "");
 
   let results = rank((t) => scoreTerm(t, q, qCompact));
+  const words = q.split(" ");
+  if (results.length === 0 && words.length > 1) results = rankByWords(words);
   if (results.length === 0 && qCompact.length >= 4) {
     const max = qCompact.length >= 7 ? 2 : 1;
     results = rank((t) => {

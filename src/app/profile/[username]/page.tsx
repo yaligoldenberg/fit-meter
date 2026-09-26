@@ -38,13 +38,13 @@ export default async function ProfilePage({
   searchParams?: { page?: string };
 }) {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/expired");
 
   const viewer = await prisma.user.findUnique({
     where: { id: session.userId },
     select: { displayName: true, username: true, condition: true },
   });
-  if (!viewer) redirect("/login");
+  if (!viewer) redirect("/api/auth/expired");
 
   // Same gate as /leaderboard: this page only exists as the far end of a leaderboard row.
   const view = viewFor(viewer.condition);

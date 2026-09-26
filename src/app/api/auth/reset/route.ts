@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createHash } from "crypto";
 import { prisma } from "@/lib/db";
-import { hashPassword, createSessionToken, SESSION_COOKIE } from "@/lib/auth";
+import { hashPassword, createSessionToken, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
 import { apiError } from "@/lib/apiErrors";
 import { isLocale } from "@/lib/i18n";
 
@@ -49,19 +49,23 @@ export async function POST(req: NextRequest) {
 
   const passwordHash = await hashPassword(password);
 
-  await prisma.$transaction([
-    prisma.user.update({ where: { id: reset.user.id }, data: { passwordHash } }),
+  // Bumping sessionVersion signs out every existing session — the point of a reset is
+  // often that someone else knows the old password. This device gets a fresh token below.
+  const [updated] = await prisma.$transaction([
+    prisma.user.update({
+      where: { id: reset.user.id },
+      data: { passwordHash, sessionVersion: { increment: 1 } },
+      select: { sessionVersion: true },
+    }),
     prisma.passwordReset.update({ where: { id: reset.id }, data: { usedAt: new Date() } }),
   ]);
 
-  const sessionToken = await createSessionToken({ userId: reset.user.id, username: reset.user.username });
-  const res = NextResponse.json({ id: reset.user.id, username: reset.user.username });
-  res.cookies.set(SESSION_COOKIE, sessionToken, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
+  const sessionToken = await createSessionToken({
+    userId: reset.user.id,
+    username: reset.user.username,
+    sv: updated.sessionVersion,
   });
+  const res = NextResponse.json({ id: reset.user.id, username: reset.user.username });
+  res.cookies.set(SESSION_COOKIE, sessionToken, SESSION_COOKIE_OPTIONS);
   return res;
 }

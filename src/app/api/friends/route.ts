@@ -49,12 +49,13 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: apiError("username_missing", locale) }, { status: 400 });
 
   const targetUsername = parsed.data.username.toLowerCase().trim().replace(/^@/, "");
-  if (targetUsername === session.username) {
-    return NextResponse.json({ error: apiError("cannot_add_self", locale) }, { status: 400 });
-  }
-
   const target = await prisma.user.findUnique({ where: { username: targetUsername } });
   if (!target) return NextResponse.json({ error: apiError("no_such_user", locale) }, { status: 404 });
+
+  // By id, not username: the username in the session token goes stale after a rename.
+  if (target.id === session.userId) {
+    return NextResponse.json({ error: apiError("cannot_add_self", locale) }, { status: 400 });
+  }
 
   const existing = await prisma.friendship.findFirst({
     where: {

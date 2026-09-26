@@ -8,13 +8,13 @@ import FeedClient from "@/components/FeedClient";
 
 export default async function FeedPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/expired");
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
     select: { displayName: true, username: true, condition: true },
   });
-  if (!user) redirect("/login");
+  if (!user) redirect("/api/auth/expired");
 
   const view = viewFor(user.condition);
   // The feed is a social surface, same as the leaderboard — arms that can't see

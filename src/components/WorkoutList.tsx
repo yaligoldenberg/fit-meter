@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   WORKOUT_TYPES,
   WorkoutTypeKey,
@@ -12,6 +11,7 @@ import {
 } from "@/lib/workoutTypes";
 import { rateWorkout, explainRating, TIER_META } from "@/lib/difficulty";
 import { Locale, StringKey, t } from "@/lib/i18n";
+import DeleteWorkoutButton from "./DeleteWorkoutButton";
 
 interface WorkoutItem {
   id: string;
@@ -38,29 +38,9 @@ function formatDate(iso: string, locale: Locale): string {
 }
 
 export default function WorkoutList({ workouts, locale }: { workouts: WorkoutItem[]; locale: Locale }) {
-  const router = useRouter();
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const sorted = [...workouts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-  async function onDelete(id: string) {
-    setError(null);
-    setDeletingId(id);
-    try {
-      const res = await fetch(`/api/workouts/${id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error ?? t(locale, "delete_workout_error"));
-        setDeletingId(null);
-        return;
-      }
-      router.refresh();
-    } catch {
-      setError(t(locale, "network_error"));
-      setDeletingId(null);
-    }
-  }
 
   if (sorted.length === 0) {
     return <p className="py-6 text-center text-sm text-slate-light">{t(locale, "nothing_logged")}</p>;
@@ -82,7 +62,6 @@ export default function WorkoutList({ workouts, locale }: { workouts: WorkoutIte
           const rating = rateWorkout(w);
           const tier = TIER_META[rating.tier];
           const tierLabel = t(locale, `difficulty_${rating.tier}` as StringKey);
-          const busy = deletingId === w.id;
           return (
             <li key={w.id} className="flex items-center gap-4 py-3.5">
               <span className="text-lg text-slate-light">{meta.icon}</span>
@@ -116,14 +95,7 @@ export default function WorkoutList({ workouts, locale }: { workouts: WorkoutIte
                   {t(locale, "unit_min")}
                 </span>
               </span>
-              <button
-                onClick={() => onDelete(w.id)}
-                disabled={busy}
-                aria-label={t(locale, "delete_workout")}
-                className="shrink-0 rounded-full px-2 py-1 text-slate-light transition-colors hover:text-flag-red disabled:opacity-30"
-              >
-                {busy ? "…" : "×"}
-              </button>
+              <DeleteWorkoutButton id={w.id} locale={locale} onError={setError} />
             </li>
           );
         })}

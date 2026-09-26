@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Locale, t } from "@/lib/i18n";
@@ -10,7 +10,18 @@ import ThemeToggle from "./ThemeToggle";
 
 type Mode = "login" | "register";
 
-export default function AuthForm({ mode, locale }: { mode: Mode; locale: Locale }) {
+export default function AuthForm({
+  mode,
+  locale,
+  next = null,
+}: {
+  mode: Mode;
+  locale: Locale;
+  /** Where to land after signing in, already vetted as a same-site path by the page. */
+  next?: string | null;
+}) {
+  // Carried across the login/register switch so the destination survives it.
+  const nextQuery = next ? `?next=${encodeURIComponent(next)}` : "";
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +72,7 @@ export default function AuthForm({ mode, locale }: { mode: Mode; locale: Locale 
         setLoading(false);
         return;
       }
-      router.push("/dashboard");
+      router.push(next ?? "/dashboard");
       router.refresh();
     } catch {
       setError(t(locale, "network_error"));
@@ -121,7 +132,7 @@ export default function AuthForm({ mode, locale }: { mode: Mode; locale: Locale 
                 className="input"
               />
             </Field>
-            <Field label={t(locale, "field_gender")}>
+            <FieldGroup label={t(locale, "field_gender")}>
               <div className="flex gap-2">
                 {([
                   ["F", t(locale, "gender_f")],
@@ -141,7 +152,7 @@ export default function AuthForm({ mode, locale }: { mode: Mode; locale: Locale 
                 ))}
               </div>
               <p className="mt-1.5 text-xs text-slate-light">{t(locale, "gender_hint")}</p>
-            </Field>
+            </FieldGroup>
           </>
         )}
         {mode === "login" && (
@@ -183,14 +194,14 @@ export default function AuthForm({ mode, locale }: { mode: Mode; locale: Locale 
         {mode === "login" ? (
           <>
             {t(locale, "auth_new_here")}{" "}
-            <Link href="/register" className="font-semibold text-signal underline-offset-4 hover:underline">
+            <Link href={`/register${nextQuery}`} className="font-semibold text-signal underline-offset-4 hover:underline">
               {t(locale, "auth_submit_register")}
             </Link>
           </>
         ) : (
           <>
             {t(locale, "auth_have_one")}{" "}
-            <Link href="/login" className="font-semibold text-signal underline-offset-4 hover:underline">
+            <Link href={`/login${nextQuery}`} className="font-semibold text-signal underline-offset-4 hover:underline">
               {t(locale, "login")}
             </Link>
           </>
@@ -206,5 +217,21 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="caption">{label}</span>
       {children}
     </label>
+  );
+}
+
+/**
+ * Field's look for a set of buttons. A <label> forwards clicks on its caption to the first
+ * control inside it, which silently picked the first chip; a labelled group doesn't.
+ */
+function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  const id = useId();
+  return (
+    <div role="group" aria-labelledby={id} className="flex flex-col gap-1.5">
+      <span id={id} className="caption">
+        {label}
+      </span>
+      {children}
+    </div>
   );
 }

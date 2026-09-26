@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WORKOUT_TYPE_ORDER, WorkoutTypeKey, usesDistance } from "@/lib/workoutTypes";
 import { rateWorkout, explainRating, TIER_META } from "@/lib/difficulty";
+import { MAX_BACKDATE_DAYS } from "@/lib/scoring";
 import { Locale, StringKey, t } from "@/lib/i18n";
 import SportPicker from "./SportPicker";
 
@@ -12,6 +13,13 @@ function todayLocalISO(): string {
   const offset = d.getTimezoneOffset();
   const local = new Date(d.getTime() - offset * 60000);
   return local.toISOString().slice(0, 10);
+}
+
+/** The earliest date the server accepts, as YYYY-MM-DD, counted back from `today`. */
+function earliestISO(today: string): string {
+  const d = new Date(`${today}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - MAX_BACKDATE_DAYS);
+  return d.toISOString().slice(0, 10);
 }
 
 export default function WorkoutForm({
@@ -34,7 +42,11 @@ export default function WorkoutForm({
   const [duration, setDuration] = useState("");
   const [distanceKm, setDistanceKm] = useState("");
   const [note, setNote] = useState("");
-  const [date, setDate] = useState(todayLocalISO());
+  const [today, setToday] = useState(todayLocalISO());
+  const [date, setDate] = useState(today);
+  // Until the person picks a date themselves, the field means "today" — so it follows the
+  // calendar. A tab left open overnight would otherwise log tomorrow's run on yesterday.
+  const dateTouched = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -50,6 +62,24 @@ export default function WorkoutForm({
     distanceKm: usesDistance(type) && distanceKm ? Number(distanceKm) : null,
   };
   const preview = rateWorkout(previewWorkout);
+
+  const syncToday = useCallback(() => {
+    const now = todayLocalISO();
+    setToday(now);
+    if (!dateTouched.current) setDate(now);
+  }, []);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") syncToday();
+    };
+    window.addEventListener("focus", syncToday);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", syncToday);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [syncToday]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -79,6 +109,7 @@ export default function WorkoutForm({
       setDuration("");
       setDistanceKm("");
       setNote("");
+      syncToday();
       setSuccess(true);
       router.refresh();
       setTimeout(() => setSuccess(false), 1500);
@@ -134,7 +165,18 @@ export default function WorkoutForm({
         )}
         <label className="flex flex-col gap-1.5">
           <span className="caption">{t(locale, "field_date")}</span>
-          <input required type="date" value={date} onChange={(e) => setDate(e.target.value)} className="input" />
+          <input
+            required
+            type="date"
+            min={earliestISO(today)}
+            max={today}
+            value={date}
+            onChange={(e) => {
+              dateTouched.current = true;
+              setDate(e.target.value);
+            }}
+            className="input"
+          />
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="caption">{t(locale, "field_note")}</span>

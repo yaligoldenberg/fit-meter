@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { getAudience } from "@/lib/audience";
 import { apiError } from "@/lib/apiErrors";
-import { membershipOf } from "@/lib/groups";
+import { membershipOf, removeMemberAndRotateCode } from "@/lib/groups";
 
 /** Remove someone from the group. Owner only. */
 export async function DELETE(
@@ -32,6 +32,7 @@ export async function DELETE(
   });
   if (!target) return NextResponse.json({ error: apiError("not_found", locale) }, { status: 404 });
 
-  await prisma.groupMember.delete({ where: { id: target.id } });
+  // The code rotates with the removal, or the removed member could simply rejoin with it.
+  await removeMemberAndRotateCode(params.id, target.id);
   return NextResponse.json({ ok: true });
 }

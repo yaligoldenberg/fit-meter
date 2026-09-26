@@ -8,9 +8,10 @@ import { isResearcher } from "@/lib/research";
  * connected friend network, so a 100-person study cohort doesn't have to be wired up
  * by hand, one add-friend click at a time.
  *
- * Every unordered pair among the resolved usernames gets an ACCEPTED Friendship,
- * skipping any pair that already exists in EITHER direction (the unique constraint is
- * on [requesterId, addresseeId], so an existing A→B must stop us creating B→A too).
+ * Every unordered pair among the resolved usernames ends up with an ACCEPTED Friendship.
+ * A pair that already has a row in EITHER direction gets no new one (the unique
+ * constraint is on [requesterId, addresseeId], so an existing A→B must stop us creating
+ * B→A too); if that row is still PENDING it is accepted in place instead.
  */
 
 const schema = z.object({
@@ -53,15 +54,22 @@ export async function POST(req: NextRequest) {
     const ids = users.map((u) => u.id).sort();
 
     if (ids.length < 2) {
-      return { created: 0, skipped: 0, notFound };
+      return { created: 0, accepted: 0, skipped: 0, notFound };
     }
 
     // Existing friendships (either direction) among this cohort only.
     const existing = await tx.friendship.findMany({
       where: { requesterId: { in: ids }, addresseeId: { in: ids } },
-      select: { requesterId: true, addresseeId: true },
+      select: { id: true, requesterId: true, addresseeId: true, status: true },
     });
     const existingPairs = new Set(existing.map((f) => [f.requesterId, f.addresseeId].sort().join("::")));
+
+    // A pending request would otherwise count as "exists" and never become a friendship.
+    const pendingIds = existing.filter((f) => f.status === "PENDING").map((f) => f.id);
+    const accepted =
+      pendingIds.length > 0
+        ? (await tx.friendship.updateMany({ where: { id: { in: pendingIds } }, data: { status: "ACCEPTED" } })).count
+        : 0;
 
     const toCreate: { requesterId: string; addresseeId: string; status: string }[] = [];
     for (let i = 0; i < ids.length; i++) {
@@ -75,11 +83,11 @@ export async function POST(req: NextRequest) {
     const totalPairs = (ids.length * (ids.length - 1)) / 2;
 
     if (toCreate.length === 0) {
-      return { created: 0, skipped: totalPairs, notFound };
+      return { created: 0, accepted, skipped: totalPairs - accepted, notFound };
     }
 
     const created = await tx.friendship.createMany({ data: toCreate, skipDuplicates: true });
-    return { created: created.count, skipped: totalPairs - created.count, notFound };
+    return { created: created.count, accepted, skipped: totalPairs - created.count - accepted, notFound };
   });
 
   return NextResponse.json(result);

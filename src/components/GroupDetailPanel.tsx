@@ -80,7 +80,8 @@ export default function GroupDetailPanel({
   return (
     <div className="flex flex-col gap-6">
       <Link href="/groups" className="caption hover:text-ink">
-        ← {t(locale, "groups_back")}
+        {/* Back points against the reading direction: right in Hebrew, left in English. */}
+        {locale === "he" ? "→" : "←"} {t(locale, "groups_back")}
       </Link>
 
       <div className="sheet p-6 md:p-8">

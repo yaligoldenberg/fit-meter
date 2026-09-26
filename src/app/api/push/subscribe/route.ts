@@ -4,10 +4,12 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { getAudience } from "@/lib/audience";
 import { apiError } from "@/lib/apiErrors";
+import { isPushEndpoint, MAX_SUBSCRIPTIONS_PER_USER } from "@/lib/push";
 
-// The shape PushSubscription.toJSON() produces in the browser.
+// The shape PushSubscription.toJSON() produces in the browser. The endpoint is where the
+// server will POST each morning, so only the browser vendors' push services are accepted.
 const subscribeSchema = z.object({
-  endpoint: z.string().url().max(2048),
+  endpoint: z.string().url().max(2048).refine(isPushEndpoint),
   keys: z.object({ p256dh: z.string().min(1).max(256), auth: z.string().min(1).max(256) }),
 });
 
@@ -30,6 +32,17 @@ export async function POST(req: NextRequest) {
     create: { endpoint, p256dh: keys.p256dh, auth: keys.auth, userId: session.userId },
     update: { p256dh: keys.p256dh, auth: keys.auth, userId: session.userId },
   });
+
+  // Cap each person's browsers, dropping the oldest — never the one being saved right now.
+  const stale = await prisma.pushSubscription.findMany({
+    where: { userId: session.userId, endpoint: { not: endpoint } },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    skip: MAX_SUBSCRIPTIONS_PER_USER - 1,
+    select: { id: true },
+  });
+  if (stale.length) {
+    await prisma.pushSubscription.deleteMany({ where: { id: { in: stale.map((s) => s.id) } } });
+  }
   return NextResponse.json({ ok: true });
 }
 

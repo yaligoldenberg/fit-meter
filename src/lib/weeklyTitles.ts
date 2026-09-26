@@ -56,11 +56,15 @@ export interface TitleAudience {
 export interface TitleContext {
   /** Score over the same 7-day window one week earlier. */
   previousScore?: number | null;
-  /** The friend closest to the user on the board. */
-  rival?: { name: string; effortGap: number; ahead: boolean } | null;
+  /**
+   * The friend next to the user on the board. The board ranks by score, then effort, so
+   * the gap is in score points unless the scores are level, when effort decides it.
+   * Both gaps 0 is a dead heat.
+   */
+  rival?: { name: string; scoreGap: number; effortGap: number; ahead: boolean } | null;
   /** Friends who were ahead last week and are behind now — the best news we can deliver. */
   overtaken?: string[];
-  /** How many friends the user currently outranks, out of how many. */
+  /** How many friends the user currently outranks outright (ties excluded), out of how many. */
   aheadOf?: number;
   friendCount?: number;
 }
@@ -269,24 +273,48 @@ function rivalClause(context: TitleContext, audience: TitleAudience): string | n
     return `🚀 You're now above ${list}${extra} — passed them this week.`;
   }
 
-  // Top of the board outright.
+  // Top of the board outright. With a single friend "all 1 of your friends" reads as a
+  // bug, so name them instead — they are the rival, directly below.
   if (friendCount && friendCount > 0 && aheadOf === friendCount) {
+    if (friendCount === 1 && rival) {
+      return he
+        ? `${f(g, "את מעל", "אתה מעל")} ${rival.name}. ראש הטבלה.`
+        : `You're above ${rival.name}. Top of the board.`;
+    }
     return he
       ? `${f(g, "את מעל כל", "אתה מעל כל")} ${friendCount} החברים שלך. ראש הטבלה.`
       : `You're above all ${friendCount} of your friends. Top of the board.`;
   }
 
   if (!rival) return null;
-  const { name, effortGap, ahead } = rival;
+  const { name, scoreGap, effortGap, ahead } = rival;
+
+  // Level on score and effort: there is no gap to close or defend.
+  if (scoreGap === 0 && effortGap === 0) {
+    return he
+      ? `תיקו עם ${name}. האימון הבא שלך שובר אותו.`
+      : `Level with ${name} on the board. Your next session breaks the tie.`;
+  }
+
+  // The gap in the unit the board actually decided on.
+  const gap = he
+    ? scoreGap > 0
+      ? scoreGap === 1
+        ? "בנקודה אחת"
+        : `ב-${scoreGap} נקודות`
+      : `ב-${effortGap} מאמץ`
+    : scoreGap > 0
+      ? `${scoreGap} point${scoreGap === 1 ? "" : "s"}`
+      : `${effortGap} effort`;
 
   if (he) {
     return ahead
-      ? `${name} ${f(g, "לפנייך", "לפניך")} ב-${effortGap} מאמץ. ${f(g, "תסגרי", "תסגור")} את הפער.`
-      : `${f(g, "מובילה", "מוביל")} על ${name} ב-${effortGap} מאמץ. אל ${f(g, "תורידי", "תוריד")} טורבו.`;
+      ? `${name} ${f(g, "לפנייך", "לפניך")} ${gap}. ${f(g, "תסגרי", "תסגור")} את הפער.`
+      : `${f(g, "מובילה", "מוביל")} על ${name} ${gap}. אל ${f(g, "תורידי", "תוריד")} טורבו.`;
   }
   return ahead
-    ? `${name} is ${effortGap} effort ahead of you. Close it.`
-    : `You're ${effortGap} effort up on ${name}. Don't ease off.`;
+    ? `${name} is ${gap} ahead of you. Close it.`
+    : `You're ${gap} up on ${name}. Don't ease off.`;
 }
 
 function rungFor(score: number): Rung {
@@ -384,8 +412,10 @@ export function titleProgress(
     });
   }
 
+  // Variety pays for each type *after* the first, so with nothing logged yet a new type
+  // is worth nothing — the first session earns its day and its volume, not +5.
   const varietyLeft = VARIETY_CAP - result.varietyPoints;
-  if (varietyLeft > 0) {
+  if (varietyLeft > 0 && result.distinctTypes > 0) {
     routes.push({
       label: t(audience.locale, "route_new_type"),
       points: Math.min(VARIETY_PER_TYPE, varietyLeft),

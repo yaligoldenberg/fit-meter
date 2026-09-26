@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { gradeColor, WindowScoreResult } from "@/lib/scoring";
 import { evaluateWeekTitle, tierColor } from "@/lib/weeklyTitles";
@@ -119,9 +119,14 @@ export default function LeaderboardClient({
   const [data, setData] = useState<LeaderboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Only the newest request may write to the board. Switching chip or week while a slower
+  // everyone-board is in flight would otherwise land its rows under the Friends chip.
+  const latestRequest = useRef(0);
 
   const load = useCallback(
     async (offset: number) => {
+      const requestId = ++latestRequest.current;
+      const isStale = () => requestId !== latestRequest.current;
       setLoading(true);
       setError(null);
       try {
@@ -131,11 +136,13 @@ export default function LeaderboardClient({
         const res = await fetch(`/api/leaderboard?${params}`);
         if (!res.ok) throw new Error("Failed to load leaderboard");
         const json = await res.json();
+        if (isStale()) return;
         setData(json);
       } catch {
+        if (isStale()) return;
         setError(t(locale, "leaderboard_load_error"));
       } finally {
-        setLoading(false);
+        if (!isStale()) setLoading(false);
       }
     },
     [locale, groupId, scope]

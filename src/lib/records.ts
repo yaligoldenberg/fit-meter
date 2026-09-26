@@ -1,4 +1,4 @@
-import { rateWorkout } from "./difficulty";
+import { rateWorkout, plausibleDistanceKm } from "./difficulty";
 import { WorkoutTypeKey } from "./workoutTypes";
 
 /**
@@ -57,7 +57,8 @@ export function computeRecords(workouts: RecordWorkout[]): PersonalRecords {
     }
     if (w.duration > longest.duration) longest = w;
 
-    const distance = w.distanceKm ?? 0;
+    // A pace nobody could hold is a typo, not a record.
+    const distance = plausibleDistanceKm(w);
     if (distance > 0) {
       const best = furthest.get(w.type);
       if (!best || distance > (best.distanceKm ?? 0)) furthest.set(w.type, w);

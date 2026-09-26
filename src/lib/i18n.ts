@@ -332,6 +332,10 @@ const STRINGS = {
     ranks_route_habit_free: "5 ימים פעילים + 3 סוגי אימון — בלי דרישת נפח נוספת",
     ranks_route_volume: (min: number) => `נפח בלבד: כ-${min} דקות קרדיו בינוני`,
     ranks_route_volume_impossible: "נפח לבד לא מספיק — חייבים עקביות או גיוון",
+    // Tap-to-arm deletes and load failures.
+    delete_workout_confirm: "למחוק?",
+    friends_remove_confirm: "להסיר באמת?",
+    groups_load_error: "לא הצלחנו לטעון את הקבוצות",
   },
   en: {
     appName: "FitMeter",
@@ -635,6 +639,10 @@ const STRINGS = {
     ranks_route_habit_free: "5 active days + 3 activity types — no extra volume needed",
     ranks_route_volume: (min: number) => `Volume alone: about ${min} min of moderate cardio`,
     ranks_route_volume_impossible: "Volume alone can't reach it — consistency or variety is required",
+    // Tap-to-arm deletes and load failures.
+    delete_workout_confirm: "Delete?",
+    friends_remove_confirm: "Remove for real?",
+    groups_load_error: "Couldn't load your groups",
   },
 } as const;
 

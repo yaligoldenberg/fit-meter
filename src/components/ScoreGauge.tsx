@@ -39,6 +39,9 @@ export default function ScoreGauge({
           strokeWidth={stroke}
           fill="none"
           strokeDasharray={circumference}
+          // The resting value lives on the circle itself; the sweep only animates towards
+          // it, so with reduced motion (animation off) the dial still reads the score.
+          strokeDashoffset={dashValue}
           style={
             {
               "--dash-full": circumference,

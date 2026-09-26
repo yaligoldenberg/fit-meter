@@ -13,6 +13,23 @@ import { isResearcher } from "@/lib/research";
 
 const schema = z.object({ username: z.string().min(1) });
 
+/**
+ * The public origin to put in the link. Under `next start` on Render, req.url is the
+ * internal address (https://localhost:10000), so prefer an explicit APP_URL, then the
+ * RENDER_EXTERNAL_URL Render sets on every web service, then the proxy's forwarded
+ * headers, and only then req.url (fine for local dev).
+ */
+function publicOrigin(req: NextRequest): string {
+  const configured = process.env.APP_URL || process.env.RENDER_EXTERNAL_URL;
+  if (configured) return configured.replace(/\/+$/, "");
+  const host = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  if (host) {
+    const proto = req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
+    return `${proto}://${host}`;
+  }
+  return new URL(req.url).origin;
+}
+
 export async function POST(req: NextRequest) {
   // 404, not 401 — a researcher-only endpoint shouldn't announce its own existence.
   if (!isResearcher(req)) {
@@ -39,7 +56,7 @@ export async function POST(req: NextRequest) {
     data: { userId: user.id, tokenHash, expiresAt },
   });
 
-  const origin = new URL(req.url).origin;
+  const origin = publicOrigin(req);
   return NextResponse.json({
     username: user.username,
     url: `${origin}/reset?token=${token}`,

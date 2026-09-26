@@ -12,6 +12,10 @@ const API_ERRORS = {
   not_found: { he: "לא נמצא", en: "Not found" },
   invalid_input: { he: "קלט לא תקין", en: "Invalid input" },
   invalid_date: { he: "תאריך לא תקין", en: "Invalid date" },
+  date_out_of_range: {
+    he: "אפשר לרשום אימון מהיום ועד שנה אחורה",
+    en: "Workouts can be dated from today back to a year ago",
+  },
   invalid_action: { he: "פעולה לא חוקית", en: "Invalid action" },
   invalid_preferences: { he: "העדפות לא תקינות", en: "Invalid preferences" },
   nothing_to_update: { he: "אין מה לעדכן", en: "Nothing to update" },
@@ -32,6 +36,12 @@ const API_ERRORS = {
     en: "Incorrect username/email or password",
   },
   gender_required: { he: "יש לבחור מין", en: "Gender is required" },
+  email_invalid: { he: 'כתובת הדוא"ל אינה תקינה', en: "That email address isn't valid" },
+  password_too_long: { he: "הסיסמה ארוכה מדי (עד 72 תווים)", en: "Password is too long (72 characters max)" },
+  too_many_attempts: {
+    he: "יותר מדי ניסיונות התחברות. נסו שוב בעוד כמה דקות",
+    en: "Too many sign-in attempts. Try again in a few minutes",
+  },
 
   username_missing: { he: "הזינו שם משתמש", en: "Enter a username" },
   no_such_user: { he: "אין משתמש עם השם הזה", en: "No user with that username" },

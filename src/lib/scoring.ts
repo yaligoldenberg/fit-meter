@@ -1,4 +1,4 @@
-import { rateWorkout, WorkoutRating } from "./difficulty";
+import { rateWorkout, plausibleDistanceKm, WorkoutRating } from "./difficulty";
 
 export interface ScorableWorkout {
   type: string;
@@ -18,7 +18,10 @@ export interface WindowScoreResult {
   activeDays: number;
   distinctTypes: number;
   totalMinutes: number;
-  /** Kilometres logged in the window; workouts without a distance contribute nothing. */
+  /**
+   * Kilometres logged in the window; workouts without a distance, or with one no one
+   * could cover in the time logged, contribute nothing.
+   */
   totalDistanceKm: number;
   workoutCount: number;
   /** The single hardest session in the window, for "best effort" callouts. */
@@ -56,7 +59,7 @@ export function scoreWindow(workouts: ScorableWorkout[]): WindowScoreResult {
     const rating = rateWorkout(w);
     effort += rating.effort;
     totalMinutes += w.duration;
-    totalDistanceKm += w.distanceKm ?? 0;
+    totalDistanceKm += plausibleDistanceKm(w);
     activeDays.add(w.date.toISOString().slice(0, 10));
     types.add(w.type);
     if (!hardest || rating.effort > hardest.effort) {
@@ -124,14 +127,16 @@ export const STUDY_TIME_ZONE = "Asia/Jerusalem";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+const LOCAL_DATE = new Intl.DateTimeFormat("en-CA", {
+  timeZone: STUDY_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 /** The calendar date at `instant` in the study's time zone, as [year, month, day]. */
 function localDateParts(instant: Date): [number, number, number] {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: STUDY_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(instant);
+  const parts = LOCAL_DATE.format(instant);
   const [y, m, d] = parts.split("-").map(Number);
   return [y, m, d];
 }
@@ -154,4 +159,21 @@ export function trailingWindow(reference: Date, offset = 0): { start: Date; end:
   const end = new Date(todayStart + DAY_MS + offset * WINDOW_DAYS * DAY_MS);
   const start = new Date(end.getTime() - WINDOW_DAYS * DAY_MS);
   return { start, end };
+}
+
+/**
+ * How far back a workout may be dated. The dashboard's list only reaches 7 days, so a
+ * date mis-picked years back (or into the future) used to be a row nobody could find to
+ * delete, still counting towards records and the feed.
+ */
+export const MAX_BACKDATE_DAYS = 365;
+
+/**
+ * The dates a workout may be logged on, as [earliest, end): today in the study's time
+ * zone back to MAX_BACKDATE_DAYS before it. Nothing in the future — a session that
+ * hasn't happened can't be scored.
+ */
+export function loggableDateRange(reference: Date = new Date()): { earliest: Date; end: Date } {
+  const { end } = trailingWindow(reference);
+  return { earliest: new Date(end.getTime() - (MAX_BACKDATE_DAYS + 1) * DAY_MS), end };
 }

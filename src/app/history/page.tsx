@@ -26,25 +26,31 @@ export default async function HistoryPage({
   searchParams?: { page?: string };
 }) {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/expired");
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
     select: { displayName: true, username: true, condition: true },
   });
-  if (!user) redirect("/login");
+  if (!user) redirect("/api/auth/expired");
 
   const audience = await getAudience();
   const view = viewFor(user.condition);
   await recordEvent(session.userId, "HISTORY_VIEW", { condition: user.condition });
   const MONTH_DAY = monthDayFormatter(audience.locale);
 
+  // One query for the whole ten-week span, bucketed here, rather than a round trip per
+  // week — the windows are contiguous, so every row lands in exactly one of them.
+  const now = new Date();
+  const windows = Array.from({ length: 10 }, (_, k) => trailingWindow(now, -(9 - k)));
+  const spanWorkouts = await prisma.workout.findMany({
+    where: { userId: session.userId, date: { gte: windows[0].start, lt: windows[9].end } },
+  });
+
   const weeks = [];
   for (let i = 9; i >= 0; i--) {
-    const { start, end } = trailingWindow(new Date(), -i);
-    const workouts = await prisma.workout.findMany({
-      where: { userId: session.userId, date: { gte: start, lt: end } },
-    });
+    const { start, end } = windows[9 - i];
+    const workouts = spanWorkouts.filter((w) => w.date >= start && w.date < end);
     const result = scoreWindow(workouts);
     // Titles are the study's manipulation: the control arms must not meet one here
     // either, so this page gates per field rather than redirecting like /ranks does.
@@ -194,6 +200,7 @@ export default async function HistoryPage({
                 page={page}
                 totalPages={totalPages}
                 basePath="/history"
+                deletable
               />
             </section>
           </>

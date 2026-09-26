@@ -21,14 +21,18 @@ export interface StreakResult {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// Built once: constructing an Intl.DateTimeFormat is far slower than using one, and
+// localDay runs a couple of times per workout in a whole history on every dashboard load.
+const LOCAL_DAY = new Intl.DateTimeFormat("en-CA", {
+  timeZone: STUDY_TIME_ZONE,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
 /** Calendar date in the study's time zone as YYYY-MM-DD. */
 function localDay(date: Date): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: STUDY_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
+  return LOCAL_DAY.format(date);
 }
 
 function previousDay(day: string): string {

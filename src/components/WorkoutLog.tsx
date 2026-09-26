@@ -7,6 +7,7 @@ import {
 } from "@/lib/workoutTypes";
 import { rateWorkout, explainRating, TIER_META } from "@/lib/difficulty";
 import { t, Locale } from "@/lib/i18n";
+import DeleteWorkoutButton from "./DeleteWorkoutButton";
 
 export interface LoggedWorkout {
   id: string;
@@ -29,6 +30,8 @@ function weekdayMonthDayFormatter(locale: Locale) {
 /**
  * One page of workouts grouped by day, plus older/newer links — the full log on /history
  * and on a person's profile. Server-rendered; `basePath` is where the page links point.
+ * `deletable` adds the owner's delete control, the only way to reach a workout that has
+ * aged out of the dashboard's 7-day list.
  */
 export default function WorkoutLog({
   workouts,
@@ -37,6 +40,7 @@ export default function WorkoutLog({
   page,
   totalPages,
   basePath,
+  deletable = false,
 }: {
   /** Newest first. */
   workouts: LoggedWorkout[];
@@ -46,6 +50,8 @@ export default function WorkoutLog({
   page: number;
   totalPages: number;
   basePath: string;
+  /** Only for the owner's own log — never on someone else's profile. */
+  deletable?: boolean;
 }) {
   const WEEKDAY_MONTH_DAY = weekdayMonthDayFormatter(locale);
 
@@ -94,8 +100,14 @@ export default function WorkoutLog({
                       {t(locale, `difficulty_${rating.tier}`)} · {rating.rating}
                     </span>
                     {showNotes && w.note && (
-                      <span className="w-full text-sm text-slate-light md:w-auto md:flex-1 md:truncate">
+                      // On phones the note drops below the row, after the delete control.
+                      <span className="order-last w-full text-sm text-slate-light md:order-none md:w-auto md:flex-1 md:truncate">
                         “{w.note}”
+                      </span>
+                    )}
+                    {deletable && (
+                      <span className="ms-auto flex items-center gap-2">
+                        <DeleteWorkoutButton id={w.id} locale={locale} />
                       </span>
                     )}
                   </div>

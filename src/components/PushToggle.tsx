@@ -30,11 +30,26 @@ function iosOutsideHomeScreen(): boolean {
   return ios && !standalone;
 }
 
+/** Held here too, so "Not now" still sticks for this page load when storage is blocked. */
+let snoozedUntil = 0;
+/** Both dashboard copies mount together; the subscription is re-sent once per page load. */
+let resent = false;
+
 function snoozed(): boolean {
+  if (snoozedUntil > Date.now()) return true;
   try {
     return Number(localStorage.getItem(SNOOZE_KEY) ?? 0) > Date.now();
   } catch {
     return false;
+  }
+}
+
+function writeSnooze() {
+  snoozedUntil = Date.now() + SNOOZE_MS;
+  try {
+    localStorage.setItem(SNOOZE_KEY, String(snoozedUntil));
+  } catch {
+    // No storage: the in-memory copy covers this page load.
   }
 }
 
@@ -67,9 +82,10 @@ function usePush(vapidPublicKey: string | null) {
   useEffect(() => {
     (async () => {
       const sub = await check();
-      if (sub) {
+      if (sub && !resent) {
         // Re-send on every visit: cheap, and it heals a server that lost the row or a
         // browser now signed in as someone else.
+        resent = true;
         fetch("/api/push/subscribe", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -98,18 +114,27 @@ function usePush(vapidPublicKey: string | null) {
       const sub =
         (await reg.pushManager.getSubscription()) ??
         (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(vapidPublicKey) }));
-      const res = await fetch("/api/push/subscribe", {
+      const saved = await fetch("/api/push/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(sub.toJSON()),
-      });
-      if (!res.ok) throw new Error("subscribe failed");
+      })
+        .then((res) => res.ok)
+        .catch(() => false);
+      if (!saved) {
+        // The server never got it, so nothing would arrive: drop the browser's half too,
+        // or every copy on the page would read the subscription back as "on".
+        await sub.unsubscribe().catch(() => {});
+        throw new Error("subscribe failed");
+      }
       setState("on");
+      announce();
     } catch {
+      // No announce: the other copies were already "off", and a re-check here must not
+      // turn a failed attempt into "on".
       setError(true);
       setState("off");
     }
-    announce();
   }
 
   async function disable() {
@@ -126,6 +151,8 @@ function usePush(vapidPublicKey: string | null) {
         });
         await sub.unsubscribe();
       }
+      // Turning it off is a clear answer, so the top card doesn't come straight back to ask.
+      writeSnooze();
       setState("off");
     } catch {
       setError(true);
@@ -135,11 +162,7 @@ function usePush(vapidPublicKey: string | null) {
   }
 
   function snooze() {
-    try {
-      localStorage.setItem(SNOOZE_KEY, String(Date.now() + SNOOZE_MS));
-    } catch {
-      // No storage: it hides for this visit only.
-    }
+    writeSnooze();
     setSnoozed(true);
     announce();
   }
@@ -153,7 +176,8 @@ function usePush(vapidPublicKey: string | null) {
  * - `top` (dashboard, above everything): the ask. Only while it's off and not snoozed —
  *   the browser's own permission prompt never fires on load, only from this card's button.
  * - `bottom` (dashboard, end of page): a one-line status once it's on, or once the top
- *   card was dismissed, so it stays findable without taking the prime spot every day.
+ *   card was dismissed or it was turned off, so it stays findable without taking the
+ *   prime spot every day. On an iPhone outside the home screen, the how-to line instead.
  * - `full` (profile): always shown, including why it can't be turned on here.
  */
 export default function PushToggle({
@@ -191,6 +215,15 @@ export default function PushToggle({
   }
 
   if (placement === "bottom") {
+    // An iPhone in a Safari tab can't turn it on here, but once the install banner is
+    // dismissed this line is the only place left that says how.
+    if (state === "ios_install") {
+      return (
+        <p className="mt-5 border-t border-rule pt-4 text-sm text-slate">
+          🏆 {t(locale, "push_title")} · {t(locale, "push_ios_install")}
+        </p>
+      );
+    }
     const show = state === "on" || ((state === "off" || state === "busy") && isSnoozed);
     if (!show) return null;
     return (

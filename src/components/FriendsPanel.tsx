@@ -32,6 +32,16 @@ export default function FriendsPanel({ locale }: { locale: Locale }) {
   const [adding, setAdding] = useState(false);
 
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  // Removing a friend arms on the first tap and fires on the second, as in
+  // GroupDetailPanel — the button sits under a thumb scrolling the list.
+  const [armedRemove, setArmedRemove] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!armedRemove) return;
+    const timer = setTimeout(() => setArmedRemove(null), 4000);
+    return () => clearTimeout(timer);
+  }, [armedRemove]);
 
   async function load() {
     setLoading(true);
@@ -79,28 +89,36 @@ export default function FriendsPanel({ locale }: { locale: Locale }) {
     }
   }
 
-  async function respond(friendshipId: string, action: "accept" | "decline") {
-    setPendingAction(friendshipId + action);
+  /** One accept/decline/remove call; a failure is shown instead of silently reloading. */
+  async function mutate(pendingKey: string, url: string, init: RequestInit) {
+    setPendingAction(pendingKey);
+    setActionError(null);
     try {
-      await fetch(`/api/friends/${friendshipId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
-      });
+      const res = await fetch(url, init);
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setActionError(json.error ?? t(locale, "friends_generic_error"));
+        return;
+      }
       await load();
+    } catch {
+      setActionError(t(locale, "friends_network_error"));
     } finally {
       setPendingAction(null);
+      setArmedRemove(null);
     }
   }
 
-  async function remove(friendshipId: string) {
-    setPendingAction(friendshipId + "remove");
-    try {
-      await fetch(`/api/friends/${friendshipId}`, { method: "DELETE" });
-      await load();
-    } finally {
-      setPendingAction(null);
-    }
+  function respond(friendshipId: string, action: "accept" | "decline") {
+    return mutate(friendshipId + action, `/api/friends/${friendshipId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+  }
+
+  function remove(friendshipId: string) {
+    return mutate(friendshipId + "remove", `/api/friends/${friendshipId}`, { method: "DELETE" });
   }
 
   return (
@@ -144,6 +162,10 @@ export default function FriendsPanel({ locale }: { locale: Locale }) {
             {t(locale, "retry")}
           </button>
         </div>
+      )}
+
+      {actionError && (
+        <p className="border-s-[3px] border-flag-red bg-chalk px-4 py-3 text-sm text-flag-red">{actionError}</p>
       )}
 
       {data && (
@@ -213,7 +235,7 @@ export default function FriendsPanel({ locale }: { locale: Locale }) {
             ) : (
               <ul className="mt-4 flex flex-col divide-y divide-rule">
                 {data.friends.map((p) => (
-                  <li key={p.friendshipId} className="group flex items-center justify-between gap-3 py-3">
+                  <li key={p.friendshipId} className="flex items-center justify-between gap-3 py-3">
                     <div className="flex min-w-0 items-center gap-3">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-rule text-[13px] font-semibold text-slate">
                         {initials(p.displayName)}
@@ -224,11 +246,21 @@ export default function FriendsPanel({ locale }: { locale: Locale }) {
                       </div>
                     </div>
                     <button
-                      onClick={() => remove(p.friendshipId)}
+                      onClick={() => {
+                        if (armedRemove !== p.friendshipId) {
+                          setArmedRemove(p.friendshipId);
+                          return;
+                        }
+                        remove(p.friendshipId);
+                      }}
                       disabled={pendingAction === p.friendshipId + "remove"}
-                      className="shrink-0 text-xs font-semibold text-slate-light opacity-0 transition hover:text-flag-red group-hover:opacity-100 disabled:opacity-50"
+                      className={
+                        armedRemove === p.friendshipId
+                          ? "shrink-0 rounded-full border border-flag-red px-3 py-1 text-xs font-semibold text-flag-red transition disabled:opacity-30"
+                          : "shrink-0 rounded-full border border-rule px-3 py-1 text-xs text-slate transition hover:border-flag-red hover:text-flag-red disabled:opacity-30"
+                      }
                     >
-                      {t(locale, "remove")}
+                      {armedRemove === p.friendshipId ? t(locale, "friends_remove_confirm") : t(locale, "remove")}
                     </button>
                   </li>
                 ))}

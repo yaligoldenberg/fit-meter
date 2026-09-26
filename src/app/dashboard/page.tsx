@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { scoreWindow, trailingWindow } from "@/lib/scoring";
-import { TIER_META } from "@/lib/difficulty";
+import { scoreWindow, trailingWindow, WindowScoreResult } from "@/lib/scoring";
+import { rankPeople, LeaderboardPerson, PERSON_FIELDS } from "@/lib/leaderboard";
 import { evaluateWeekTitle, titleProgress, TitleContext } from "@/lib/weeklyTitles";
 import { getAudience } from "@/lib/audience";
 import { viewFor, recordEvent } from "@/lib/research";
@@ -26,84 +26,80 @@ import GoalCard from "@/components/GoalCard";
 import RecordsCard from "@/components/RecordsCard";
 
 /**
- * Last week's score and the friend nearest on the board — the two things the title copy
- * compares against. One query for the previous window, one for every friend's workouts.
+ * Last week's score and where the user stands among friends — the two things the title
+ * copy compares against. Positions come from rankPeople, the same ordering the Friends
+ * board on /leaderboard shows (score, then effort), so "top of the board" here is top of
+ * the board there. One ranking per window, each a single query.
  */
-async function buildTitleContext(userId: string, currentStart: Date): Promise<TitleContext> {
-  const previous = trailingWindow(new Date(), -1);
-  const previousWorkouts = await prisma.workout.findMany({
-    where: { userId, date: { gte: previous.start, lt: previous.end } },
-  });
-  const previousScore = scoreWindow(previousWorkouts).score;
-
+async function buildTitleContext(me: LeaderboardPerson): Promise<TitleContext> {
   const friendships = await prisma.friendship.findMany({
     where: {
       status: "ACCEPTED",
-      OR: [{ requesterId: userId }, { addresseeId: userId }],
+      OR: [{ requesterId: me.id }, { addresseeId: me.id }],
     },
     include: {
-      requester: { select: { id: true, displayName: true } },
-      addressee: { select: { id: true, displayName: true } },
+      requester: { select: PERSON_FIELDS },
+      addressee: { select: PERSON_FIELDS },
     },
   });
+  const friends = friendships.map((f) => (f.requesterId === me.id ? f.addressee : f.requester));
 
-  const friends = friendships.map((f) => (f.requesterId === userId ? f.addressee : f.requester));
-  if (friends.length === 0) return { previousScore };
-
-  // Both windows for everyone in one query each, so "who did I pass?" is answerable
-  // without a round trip per friend.
-  const ids = [userId, ...friends.map((p) => p.id)];
-  const { end } = trailingWindow(new Date());
-  const [nowRows, thenRows] = await Promise.all([
-    prisma.workout.findMany({ where: { userId: { in: ids }, date: { gte: currentStart, lt: end } } }),
-    prisma.workout.findMany({
-      where: { userId: { in: ids }, date: { gte: previous.start, lt: previous.end } },
-    }),
+  const now = new Date();
+  const people = [me, ...friends];
+  const [boardNow, boardThen] = await Promise.all([
+    rankPeople(people, trailingWindow(now)),
+    rankPeople(people, trailingWindow(now, -1)),
   ]);
 
-  const effortIn = (rows: typeof nowRows, id: string) =>
-    scoreWindow(rows.filter((w) => w.userId === id)).effort;
+  const meNow = boardNow.find((p) => p.id === me.id)!;
+  const meThen = boardThen.find((p) => p.id === me.id)!;
+  const previousScore = meThen.score;
+  if (friends.length === 0) return { previousScore };
 
-  const myEffortNow = effortIn(nowRows, userId);
-  const myEffortThen = effortIn(thenRows, userId);
+  // The board breaks exact ties by name, which is ordering, not standing: nobody is
+  // "passed" or "beaten" by being later in the alphabet.
+  const tied = (a: WindowScoreResult, b: WindowScoreResult) => a.score === b.score && a.effort === b.effort;
+  const thenById = new Map(boardThen.map((p) => [p.id, p]));
+  const others = boardNow.filter((p) => p.id !== me.id);
+  const behindMe = others.filter((p) => p.rank > meNow.rank && !tied(p, meNow));
 
-  const standings = friends.map((p) => ({
-    name: p.displayName,
-    now: effortIn(nowRows, p.id),
-    then: effortIn(thenRows, p.id),
-  }));
+  // Ahead of you last week, behind you this week — closest behind first, as the board reads.
+  const overtaken = behindMe
+    .filter((p) => {
+      const then = thenById.get(p.id)!;
+      return then.rank < meThen.rank && !tied(then, meThen);
+    })
+    .map((p) => p.displayName);
 
-  // Ahead of you last week, behind you this week.
-  const overtaken = standings
-    .filter((p) => p.then > myEffortThen && p.now < myEffortNow)
-    .sort((a, b) => b.now - a.now)
-    .map((p) => p.name);
-
-  const aheadOf = standings.filter((p) => p.now < myEffortNow).length;
-
-  const nearest = [...standings].sort(
-    (a, b) => Math.abs(a.now - myEffortNow) - Math.abs(b.now - myEffortNow)
-  )[0];
+  // The rival is a neighbour on the board: whoever is right above, unless the one right
+  // below is closer. Being chased only wins on a strictly smaller gap.
+  const above = boardNow[meNow.rank - 2];
+  const below = boardNow[meNow.rank];
+  const closer = (a: WindowScoreResult, b: WindowScoreResult) =>
+    Math.abs(a.score - meNow.score) - Math.abs(b.score - meNow.score) ||
+    Math.abs(a.effort - meNow.effort) - Math.abs(b.effort - meNow.effort);
+  const nearest = above && (!below || closer(above, below) <= 0) ? above : below;
 
   return {
     previousScore,
     overtaken,
-    aheadOf,
+    aheadOf: behindMe.length,
     friendCount: friends.length,
     rival: {
-      name: nearest.name,
-      effortGap: Math.abs(nearest.now - myEffortNow),
-      ahead: nearest.now > myEffortNow,
+      name: nearest.displayName,
+      scoreGap: Math.abs(nearest.score - meNow.score),
+      effortGap: Math.abs(nearest.effort - meNow.effort),
+      ahead: nearest.rank < meNow.rank && !tied(nearest, meNow),
     },
   };
 }
 
 export default async function DashboardPage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/expired");
 
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
-  if (!user) redirect("/login");
+  if (!user) redirect("/api/auth/expired");
 
   const { start, end } = trailingWindow(new Date());
   const workouts = await prisma.workout.findMany({
@@ -134,7 +130,14 @@ export default async function DashboardPage() {
   // The copy is comparative, so it needs something to compare against. Only gathered
   // for the arm that actually sees titles — the other arms must not be told where they
   // stand relative to friends, or the control is contaminated.
-  const context = view.showTitles ? await buildTitleContext(session.userId, start) : {};
+  const context = view.showTitles
+    ? await buildTitleContext({
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        gender: user.gender,
+      })
+    : {};
 
   const weekTitle = evaluateWeekTitle(result, audience, context);
   const progress = titleProgress(result, audience);
@@ -211,7 +214,7 @@ export default async function DashboardPage() {
                   {result.hardest && (
                     <Stat
                       label={t(audience.locale, "stat_hardest")}
-                      value={`${TIER_META[result.hardest.rating.tier].label} · ${result.hardest.rating.rating}`}
+                      value={`${t(audience.locale, `difficulty_${result.hardest.rating.tier}`)} · ${result.hardest.rating.rating}`}
                     />
                   )}
                 </div>

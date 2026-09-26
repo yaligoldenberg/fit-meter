@@ -26,7 +26,9 @@ export default function LanguageToggle({
   const [busy, setBusy] = useState(false);
 
   async function switchTo(next: Locale) {
-    if (next === locale || busy) return;
+    // No early return when `next` is already showing: the page may be rendering the stored
+    // preference with no cookie behind it, and tapping should still pin the choice.
+    if (busy) return;
     setBusy(true);
     // The cookie is what the server renders from, so write it first: the switch then
     // works even when the request below fails, rather than silently doing nothing.

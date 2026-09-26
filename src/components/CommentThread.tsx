@@ -134,7 +134,8 @@ export default function CommentThread({
               onChange={(e) => setDraft(e.target.value)}
               maxLength={280}
               placeholder={t(locale, "comment_placeholder")}
-              className="input flex-1 py-1.5 text-sm"
+              // 16px: anything smaller makes iOS Safari zoom the page on focus.
+              className="input flex-1 py-1.5 text-base"
             />
             <button
               type="submit"

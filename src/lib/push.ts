@@ -16,6 +16,40 @@ import { viewFor } from "./research";
 
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "https://fit-meter.onrender.com";
 
+/** Most browsers one person can have subscribed at once; a new one drops their oldest. */
+export const MAX_SUBSCRIPTIONS_PER_USER = 5;
+
+/** A push service that never answers must not hold up everyone else's morning. */
+const SEND_TIMEOUT_MS = 10_000;
+const SEND_BATCH = 20;
+
+/**
+ * The browser vendors' push services. Endpoints come from the client, so anything else is
+ * refused on subscribe and skipped on send — the server never POSTs to an arbitrary URL.
+ * An entry starting with "." matches that domain's subdomains.
+ */
+export const PUSH_SERVICE_HOSTS = [
+  "fcm.googleapis.com", // Chrome, Edge on Android, Samsung Internet, Opera, Brave
+  "android.googleapis.com", // Older Chrome subscriptions
+  "updates.push.services.mozilla.com", // Firefox
+  ".push.services.mozilla.com",
+  "web.push.apple.com", // Safari (macOS, and iOS home-screen apps)
+  ".push.apple.com",
+  ".notify.windows.com", // Edge on Windows
+];
+
+export function isPushEndpoint(endpoint: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:" || url.port || url.username || url.password) return false;
+  const host = url.hostname.toLowerCase();
+  return PUSH_SERVICE_HOSTS.some((h) => (h.startsWith(".") ? host.endsWith(h) : host === h));
+}
+
 export function vapidPublicKey(): string | null {
   return process.env.VAPID_PUBLIC_KEY || null;
 }
@@ -64,9 +98,10 @@ export interface PushMessage {
 }
 
 /** The notification text, in the recipient's language, and addressed to them if they're the winner. */
-export function winnerMessage(winner: Winner, to: Recipient): PushMessage {
+export function winnerMessage(winner: Winner, to: Recipient, day: string): PushMessage {
   const self = winner.id === to.id;
-  const base = { url: "/leaderboard", tag: "morning-winner" };
+  // A fresh tag each day: reusing yesterday's makes Chrome swap it in silently, no sound.
+  const base = { url: "/leaderboard", tag: `morning-winner-${day}` };
 
   if (to.locale === "en") {
     return {
@@ -118,15 +153,16 @@ export async function sendMorningWinner(
   if (!top || top.score <= 0) return { status: "no_winner", day };
   const winner: Winner = { id: top.id, displayName: top.displayName, score: top.score };
 
-  // Only people whose arm shows the leaderboard get told what's on it.
+  // Only people whose arm shows the leaderboard get told what's on it, and only through a
+  // known push service (rows saved before the endpoint check existed are skipped too).
   const subscriptions = (
     await prisma.pushSubscription.findMany({
       include: { user: { select: { id: true, locale: true, gender: true, condition: true } } },
     })
-  ).filter((s) => viewFor(s.user.condition).showLeaderboard);
+  ).filter((s) => viewFor(s.user.condition).showLeaderboard && isPushEndpoint(s.endpoint));
 
   if (opts.dryRun) {
-    const sample = winnerMessage(winner, { id: "", locale: "he", gender: null });
+    const sample = winnerMessage(winner, { id: "", locale: "he", gender: null }, day);
     return { status: "dry_run", day, winner, subscriptions: subscriptions.length, sample };
   }
 
@@ -141,16 +177,29 @@ export async function sendMorningWinner(
     throw e;
   }
 
-  const outcomes = await Promise.allSettled(
-    subscriptions.map((s) =>
-      webpush.sendNotification(
-        { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-        JSON.stringify(winnerMessage(winner, s.user)),
-        // A phone that's off until 13:00 should still get it; after that it's stale.
-        { TTL: 6 * 60 * 60 }
-      )
-    )
-  );
+  // In batches, each send with a socket timeout, so a slow or silent push service costs at
+  // most one timeout per batch instead of hanging a run that has already claimed the day.
+  const outcomes: PromiseSettledResult<unknown>[] = [];
+  for (let i = 0; i < subscriptions.length; i += SEND_BATCH) {
+    const batch = subscriptions.slice(i, i + SEND_BATCH);
+    outcomes.push(
+      ...(await Promise.allSettled(
+        batch.map((s) =>
+          webpush.sendNotification(
+            { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+            JSON.stringify(winnerMessage(winner, s.user, day)),
+            {
+              // A phone that's off until 13:00 should still get it; after that it's stale.
+              TTL: 6 * 60 * 60,
+              // "high" asks Android not to hold it back in Doze until the phone wakes up.
+              urgency: "high",
+              timeout: SEND_TIMEOUT_MS,
+            }
+          )
+        )
+      ))
+    );
+  }
 
   // 404/410 mean the browser dropped the subscription (uninstalled, permissions reset).
   const gone: string[] = [];

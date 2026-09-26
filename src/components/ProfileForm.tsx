@@ -129,7 +129,8 @@ export default function ProfileForm({
           href={`/profile/${savedUsername}`}
           className="text-sm font-semibold text-signal underline-offset-4 hover:underline"
         >
-          {t(locale, "profile_view_public")} →
+          {/* Forward points the way the text reads: left in Hebrew, right in English. */}
+          {t(locale, "profile_view_public")} {locale === "he" ? "←" : "→"}
         </Link>
       </div>
     </form>

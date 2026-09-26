@@ -12,13 +12,13 @@ import { vapidPublicKey } from "@/lib/push";
 /** Your own account: rename yourself. Other people's pages live at /profile/[username]. */
 export default async function ProfilePage() {
   const session = await getSession();
-  if (!session) redirect("/login");
+  if (!session) redirect("/api/auth/expired");
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
     select: { displayName: true, username: true, condition: true },
   });
-  if (!user) redirect("/login");
+  if (!user) redirect("/api/auth/expired");
 
   const audience = await getAudience();
   const view = viewFor(user.condition);

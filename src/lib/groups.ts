@@ -72,6 +72,27 @@ export async function createGroup(ownerId: string, name: string) {
   throw new Error("Could not allocate a unique join code");
 }
 
+/**
+ * Removes a member and issues the group a fresh join code in one transaction. The old
+ * code is what the removed person was let in with and may still have in a chat, so
+ * leaving it valid would make removal a formality. Same P2002 retry as createGroup.
+ */
+export async function removeMemberAndRotateCode(groupId: string, membershipId: string) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      await prisma.$transaction([
+        prisma.groupMember.delete({ where: { id: membershipId } }),
+        prisma.group.update({ where: { id: groupId }, data: { joinCode: randomJoinCode() } }),
+      ]);
+      return;
+    } catch (e) {
+      if ((e as { code?: string })?.code === "P2002") continue;
+      throw e;
+    }
+  }
+  throw new Error("Could not allocate a unique join code");
+}
+
 /** Every group the user belongs to, newest membership first. */
 export async function groupsForUser(userId: string): Promise<GroupSummary[]> {
   const memberships = await prisma.groupMember.findMany({

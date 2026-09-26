@@ -6,6 +6,7 @@ import { WORKOUT_TYPE_ORDER } from "@/lib/workoutTypes";
 import { rateWorkout } from "@/lib/difficulty";
 import { getAudience } from "@/lib/audience";
 import { apiError } from "@/lib/apiErrors";
+import { loggableDateRange } from "@/lib/scoring";
 
 /**
  * Only facts are accepted. Intensity is absent on purpose and zod strips it if a client
@@ -50,6 +51,12 @@ export async function POST(req: NextRequest) {
   const parsedDate = new Date(date);
   if (Number.isNaN(parsedDate.getTime())) {
     return NextResponse.json({ error: apiError("invalid_date", locale) }, { status: 400 });
+  }
+  // Today (Israeli calendar) back to a year ago. Only the dashboard's 7-day list offers a
+  // delete, so a future or long-past date would be a row stuck in the score and records.
+  const { earliest, end } = loggableDateRange();
+  if (parsedDate < earliest || parsedDate >= end) {
+    return NextResponse.json({ error: apiError("date_out_of_range", locale) }, { status: 400 });
   }
 
   // Derived here rather than taken from the request, and stored alongside the facts it

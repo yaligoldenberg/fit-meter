@@ -24,6 +24,9 @@ model User {
   /// Optional self-set weekly target: "WORKOUTS" | "DAYS" | "EFFORT", with its value.
   goalType     String?
   goalValue    Int?
+  /// Stamped into every session token as `sv`; bumping it (on a password reset) revokes
+  /// all sessions issued before. Tokens without `sv` count as 0. See src/lib/auth.ts.
+  sessionVersion Int    @default(0)
   createdAt    DateTime @default(now())
 
   workouts          Workout[]
@@ -101,7 +104,7 @@ model Workout {
   type       String
   duration   Int
   /// LOW | MEDIUM | HIGH, DERIVED by rateWorkout from type/duration/distance and stored
-  /// alongside them — never sent by the client. Rows logged before 2026-09-13 hold the
+  /// alongside them — never sent by the client. Rows logged before 2026-09-20 hold the
   /// self-reported value the app used to ask for, so the research export mixes the two;
   /// the app itself re-rates on read and never displays this column.
   intensity  String
