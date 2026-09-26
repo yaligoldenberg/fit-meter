@@ -93,6 +93,8 @@ const STRINGS = {
     field_date: "תאריך",
     field_note: "הערה",
     field_optional: "לא חובה",
+    field_duration_placeholder: "למשל 45",
+    effort_needs_minutes: "הקושי יחושב אחרי שיוזנו הדקות.",
     effort_computed: "קושי מחושב",
     effort_computed_note:
       "מחושב מסוג הפעילות, מהדקות ומהקצב — באותה דרך לכולם, כך שהציונים נשארים בני-השוואה.",
@@ -377,6 +379,8 @@ const STRINGS = {
     field_date: "Date",
     field_note: "Note",
     field_optional: "optional",
+    field_duration_placeholder: "e.g. 45",
+    effort_needs_minutes: "Enter the minutes to see the difficulty.",
     effort_computed: "Computed difficulty",
     effort_computed_note:
       "Worked out from the activity, the minutes and the pace — the same way for everyone, so scores stay comparable.",

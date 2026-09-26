@@ -104,7 +104,7 @@ export default function SportPicker({
       const step = e.key === "ArrowDown" ? 1 : -1;
       setActive((a) => Math.min(flat.length - 1, Math.max(0, a + step)));
     } else if (e.key === "Enter") {
-      // Closed, Enter keeps its usual job of submitting the form.
+      // Closed, Enter does nothing — WorkoutForm never lets Enter submit (see there).
       if (!open) return;
       e.preventDefault();
       const option = flat[active];

@@ -26,7 +26,12 @@ export default function WorkoutForm({
   // Someone new gets the app's most-logged sports as chips until they have their own.
   const quickTypes = recentTypes && recentTypes.length > 0 ? recentTypes : WORKOUT_TYPE_ORDER.slice(0, 5);
   const [type, setType] = useState<WorkoutTypeKey>(quickTypes[0]);
-  const [duration, setDuration] = useState("30");
+  // Deliberately blank, never a default. The log had a trail of phantom "Running · 30 min"
+  // rows — the form's untouched starting state — each followed seconds later by the
+  // workout the person actually meant: an Enter in some field had saved the form before
+  // they'd filled it in, and a pre-filled 30 made that premature save valid. Blank and
+  // required, a save that comes too early is refused instead of recorded.
+  const [duration, setDuration] = useState("");
   const [distanceKm, setDistanceKm] = useState("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(todayLocalISO());
@@ -71,7 +76,7 @@ export default function WorkoutForm({
         setLoading(false);
         return;
       }
-      setDuration("30");
+      setDuration("");
       setDistanceKm("");
       setNote("");
       setSuccess(true);
@@ -85,8 +90,17 @@ export default function WorkoutForm({
     }
   }
 
+  // Only the Save button saves. Browsers submit a form when Enter (or a phone keyboard's
+  // Go) is pressed in any of its inputs — the sport search, the date, the note — which is
+  // how half-filled workouts were getting logged.
+  function blockEnterSubmit(e: React.KeyboardEvent<HTMLFormElement>) {
+    if (e.key === "Enter" && e.target instanceof HTMLInputElement) e.preventDefault();
+  }
+
+  const hasMinutes = previewWorkout.duration > 0;
+
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5">
+    <form onSubmit={onSubmit} onKeyDown={blockEnterSubmit} className="flex flex-col gap-5">
       <SportPicker value={type} onChange={setType} recentTypes={quickTypes} locale={locale} />
 
       <div className="grid min-w-0 grid-cols-2 gap-4 sm:grid-cols-4">
@@ -97,6 +111,8 @@ export default function WorkoutForm({
             type="number"
             min={1}
             max={600}
+            inputMode="numeric"
+            placeholder={t(locale, "field_duration_placeholder")}
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
             className="input"
@@ -135,16 +151,20 @@ export default function WorkoutForm({
 
       <div className="border-t border-rule pt-4">
         <p className="caption mb-2.5">{t(locale, "effort_computed")}</p>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          <span
-            className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
-              TIER_META[preview.tier].className
-            }`}
-          >
-            {t(locale, `difficulty_${preview.tier}` as StringKey)} · {preview.rating}
-          </span>
-          <span className="text-[13px] text-slate">{explainRating(previewWorkout, preview, locale)}</span>
-        </div>
+        {hasMinutes ? (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <span
+              className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+                TIER_META[preview.tier].className
+              }`}
+            >
+              {t(locale, `difficulty_${preview.tier}` as StringKey)} · {preview.rating}
+            </span>
+            <span className="text-[13px] text-slate">{explainRating(previewWorkout, preview, locale)}</span>
+          </div>
+        ) : (
+          <p className="text-[13px] text-slate">{t(locale, "effort_needs_minutes")}</p>
+        )}
         <p className="mt-2 text-[13px] text-slate-light">{t(locale, "effort_computed_note")}</p>
       </div>
 
