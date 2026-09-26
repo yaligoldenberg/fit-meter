@@ -168,12 +168,42 @@ export function trailingWindow(reference: Date, offset = 0): { start: Date; end:
  */
 export const MAX_BACKDATE_DAYS = 365;
 
+/** An IANA zone name the runtime actually knows, or null — the value comes from the client. */
+export function validTimeZone(zone: unknown): string | null {
+  if (typeof zone !== "string" || zone.length === 0 || zone.length > 64) return null;
+  try {
+    new Intl.DateTimeFormat("en-CA", { timeZone: zone });
+    return zone;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * The dates a workout may be logged on, as [earliest, end): today in the study's time
- * zone back to MAX_BACKDATE_DAYS before it. Nothing in the future — a session that
- * hasn't happened can't be scored.
+ * The dates a workout may be logged on, as [earliest, end): today back to
+ * MAX_BACKDATE_DAYS before it. Nothing in the future — a session that hasn't happened
+ * can't be scored.
+ *
+ * "Today" is the logger's own calendar day when their browser says which zone it is in:
+ * the date they pick comes from their device's calendar, so judging it by Israel's would
+ * refuse someone abroad their own today for part of every day. Without a usable zone it
+ * falls back to the study's. Faking a zone buys at most a day, and only by hand-crafting
+ * the request.
  */
-export function loggableDateRange(reference: Date = new Date()): { earliest: Date; end: Date } {
-  const { end } = trailingWindow(reference);
+export function loggableDateRange(
+  reference: Date = new Date(),
+  timeZone: string | null = null
+): { earliest: Date; end: Date } {
+  const zone = validTimeZone(timeZone) ?? STUDY_TIME_ZONE;
+  const [y, m, d] = new Intl.DateTimeFormat("en-CA", {
+    timeZone: zone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .format(reference)
+    .split("-")
+    .map(Number);
+  const end = new Date(Date.UTC(y, m - 1, d) + DAY_MS);
   return { earliest: new Date(end.getTime() - (MAX_BACKDATE_DAYS + 1) * DAY_MS), end };
 }

@@ -98,6 +98,7 @@ export default function WorkoutForm({
           distanceKm: usesDistance(type) && distanceKm ? Number(distanceKm) : null,
           note: note || undefined,
           date: new Date(date).toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
       });
       const data = await res.json();

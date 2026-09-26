@@ -19,6 +19,8 @@ const schema = z.object({
   distanceKm: z.number().min(0).max(1000).nullable().optional(),
   note: z.string().max(280).optional(),
   date: z.string(),
+  /** The browser's IANA zone, so "today" is the logger's own calendar day. */
+  timeZone: z.string().max(64).optional(),
 });
 
 /** How recently an identical workout must have been saved to count as the same save. */
@@ -47,14 +49,14 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: apiError("invalid_input", locale) }, { status: 400 });
   }
-  const { type, duration, distanceKm, note, date } = parsed.data;
+  const { type, duration, distanceKm, note, date, timeZone } = parsed.data;
   const parsedDate = new Date(date);
   if (Number.isNaN(parsedDate.getTime())) {
     return NextResponse.json({ error: apiError("invalid_date", locale) }, { status: 400 });
   }
-  // Today (Israeli calendar) back to a year ago. Only the dashboard's 7-day list offers a
-  // delete, so a future or long-past date would be a row stuck in the score and records.
-  const { earliest, end } = loggableDateRange();
+  // Today (the logger's calendar) back to a year ago. A future or long-past date would be
+  // a row stuck in the score and records.
+  const { earliest, end } = loggableDateRange(new Date(), timeZone ?? null);
   if (parsedDate < earliest || parsedDate >= end) {
     return NextResponse.json({ error: apiError("date_out_of_range", locale) }, { status: 400 });
   }
