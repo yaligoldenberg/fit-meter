@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Locale, t } from "@/lib/i18n";
 
 type State = "checking" | "unsupported" | "ios_install" | "denied" | "off" | "on" | "busy";
+
+/** Fired after any toggle or dismissal so every copy on the page re-reads its state. */
+const CHANGE_EVENT = "fitmeter-push-change";
+const SNOOZE_KEY = "fitmeter-push-snoozed-until";
+/** "Not now" is respected for two weeks, then the top card asks once more. */
+const SNOOZE_MS = 14 * 24 * 60 * 60 * 1000;
 
 /** VAPID public keys travel base64url-encoded; pushManager.subscribe wants raw bytes. */
 function keyBytes(base64url: string): ArrayBuffer {
@@ -24,46 +30,57 @@ function iosOutsideHomeScreen(): boolean {
   return ios && !standalone;
 }
 
-/**
- * Opt-in for the 07:00 "who's #1" notification. `compact` is the dashboard prompt: it
- * disappears once notifications are on (or can't be) instead of taking up space daily.
- */
-export default function PushToggle({
-  locale,
-  vapidPublicKey,
-  compact = false,
-}: {
-  locale: Locale;
-  vapidPublicKey: string | null;
-  compact?: boolean;
-}) {
+function snoozed(): boolean {
+  try {
+    return Number(localStorage.getItem(SNOOZE_KEY) ?? 0) > Date.now();
+  } catch {
+    return false;
+  }
+}
+
+function announce() {
+  window.dispatchEvent(new Event(CHANGE_EVENT));
+}
+
+/** Subscription state for this browser, kept in step across every PushToggle on the page. */
+function usePush(vapidPublicKey: string | null) {
   const [state, setState] = useState<State>("checking");
+  const [isSnoozed, setSnoozed] = useState(false);
   const [error, setError] = useState(false);
+
+  const check = useCallback(async () => {
+    setSnoozed(snoozed());
+    if (!vapidPublicKey) return setState("unsupported");
+    const capable = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    if (!capable) return setState(iosOutsideHomeScreen() ? "ios_install" : "unsupported");
+    if (Notification.permission === "denied") return setState("denied");
+    try {
+      const reg = await navigator.serviceWorker.register("/sw.js");
+      const sub = await reg.pushManager.getSubscription();
+      setState(sub ? "on" : "off");
+      return sub;
+    } catch {
+      setState("unsupported");
+    }
+  }, [vapidPublicKey]);
 
   useEffect(() => {
     (async () => {
-      if (!vapidPublicKey) return setState("unsupported");
-      const capable = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-      if (!capable) return setState(iosOutsideHomeScreen() ? "ios_install" : "unsupported");
-      if (Notification.permission === "denied") return setState("denied");
-      try {
-        const reg = await navigator.serviceWorker.register("/sw.js");
-        const sub = await reg.pushManager.getSubscription();
-        if (sub) {
-          // Re-send on every visit: cheap, and it heals a server that lost the row or a
-          // browser now signed in as someone else.
-          await fetch("/api/push/subscribe", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(sub.toJSON()),
-          });
-        }
-        setState(sub ? "on" : "off");
-      } catch {
-        setState("unsupported");
+      const sub = await check();
+      if (sub) {
+        // Re-send on every visit: cheap, and it heals a server that lost the row or a
+        // browser now signed in as someone else.
+        fetch("/api/push/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(sub.toJSON()),
+        }).catch(() => {});
       }
     })();
-  }, [vapidPublicKey]);
+    const onChange = () => void check();
+    window.addEventListener(CHANGE_EVENT, onChange);
+    return () => window.removeEventListener(CHANGE_EVENT, onChange);
+  }, [check]);
 
   async function enable() {
     if (!vapidPublicKey) return;
@@ -72,7 +89,10 @@ export default function PushToggle({
     try {
       // Must run straight from the tap — Safari refuses permission prompts that aren't.
       const permission = await Notification.requestPermission();
-      if (permission !== "granted") return setState(permission === "denied" ? "denied" : "off");
+      if (permission !== "granted") {
+        setState(permission === "denied" ? "denied" : "off");
+        return;
+      }
       const reg = await navigator.serviceWorker.register("/sw.js");
       await navigator.serviceWorker.ready;
       const sub =
@@ -89,6 +109,7 @@ export default function PushToggle({
       setError(true);
       setState("off");
     }
+    announce();
   }
 
   async function disable() {
@@ -110,10 +131,85 @@ export default function PushToggle({
       setError(true);
       setState("on");
     }
+    announce();
   }
 
+  function snooze() {
+    try {
+      localStorage.setItem(SNOOZE_KEY, String(Date.now() + SNOOZE_MS));
+    } catch {
+      // No storage: it hides for this visit only.
+    }
+    setSnoozed(true);
+    announce();
+  }
+
+  return { state, isSnoozed, error, enable, disable, snooze };
+}
+
+/**
+ * Opt-in for the 07:00 "who's #1" notification, in three placements:
+ *
+ * - `top` (dashboard, above everything): the ask. Only while it's off and not snoozed —
+ *   the browser's own permission prompt never fires on load, only from this card's button.
+ * - `bottom` (dashboard, end of page): a one-line status once it's on, or once the top
+ *   card was dismissed, so it stays findable without taking the prime spot every day.
+ * - `full` (profile): always shown, including why it can't be turned on here.
+ */
+export default function PushToggle({
+  locale,
+  vapidPublicKey,
+  placement,
+}: {
+  locale: Locale;
+  vapidPublicKey: string | null;
+  placement: "top" | "bottom" | "full";
+}) {
+  const { state, isSnoozed, error, enable, disable, snooze } = usePush(vapidPublicKey);
   if (state === "checking") return null;
-  if (compact && (state === "on" || state === "unsupported" || state === "denied")) return null;
+
+  const errorLine = error && <p className="mt-1 text-sm text-flag-red">{t(locale, "push_error")}</p>;
+
+  if (placement === "top") {
+    // iPhones in a Safari tab get the install banner instead; nothing to turn on here yet.
+    if (!(state === "off" || state === "busy") || isSnoozed) return null;
+    return (
+      <div className="sheet mb-5 border-s-[3px] border-s-signal p-5 md:px-9">
+        <p className="font-semibold text-ink">🏆 {t(locale, "push_title")}</p>
+        <p className="mt-1 text-sm text-slate">{t(locale, "push_desc")}</p>
+        {errorLine}
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <button type="button" onClick={enable} disabled={state === "busy"} className="btn-primary">
+            {t(locale, "push_enable")}
+          </button>
+          <button type="button" onClick={snooze} className="btn-quiet">
+            {t(locale, "install_dismiss")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (placement === "bottom") {
+    const show = state === "on" || ((state === "off" || state === "busy") && isSnoozed);
+    if (!show) return null;
+    return (
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-rule pt-4 text-sm">
+        <span className="text-slate">
+          🏆 {t(locale, "push_title")} · {t(locale, state === "on" ? "push_status_on" : "push_status_off")}
+        </span>
+        <button
+          type="button"
+          onClick={state === "on" ? disable : enable}
+          disabled={state === "busy"}
+          className="text-slate underline underline-offset-4 hover:text-ink disabled:opacity-40"
+        >
+          {t(locale, state === "on" ? "push_disable" : "push_enable")}
+        </button>
+        {errorLine}
+      </div>
+    );
+  }
 
   const note =
     state === "on"
@@ -127,24 +223,17 @@ export default function PushToggle({
             : t(locale, "push_desc");
 
   return (
-    <div className={compact ? "sheet flex flex-wrap items-center justify-between gap-4 p-5 md:px-9" : ""}>
-      <div className="min-w-0 flex-1">
-        <p className="font-semibold text-ink">🏆 {t(locale, "push_title")}</p>
-        <p className="mt-1 text-sm text-slate">{note}</p>
-        {error && <p className="mt-1 text-sm text-flag-red">{t(locale, "push_error")}</p>}
-      </div>
+    <div>
+      <p className="font-semibold text-ink">🏆 {t(locale, "push_title")}</p>
+      <p className="mt-1 text-sm text-slate">{note}</p>
+      {errorLine}
       {(state === "off" || state === "busy") && (
-        <button
-          type="button"
-          onClick={enable}
-          disabled={state === "busy"}
-          className={`btn-primary shrink-0 ${compact ? "" : "mt-4"}`}
-        >
+        <button type="button" onClick={enable} disabled={state === "busy"} className="btn-primary mt-4">
           {t(locale, "push_enable")}
         </button>
       )}
-      {state === "on" && !compact && (
-        <button type="button" onClick={disable} className="btn-quiet mt-4 shrink-0">
+      {state === "on" && (
+        <button type="button" onClick={disable} className="btn-quiet mt-4">
           {t(locale, "push_disable")}
         </button>
       )}

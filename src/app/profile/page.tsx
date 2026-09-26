@@ -46,7 +46,7 @@ export default async function ProfilePage() {
         </section>
         {view.showLeaderboard && (
           <section className="sheet mt-5 p-6 md:p-9">
-            <PushToggle locale={audience.locale} vapidPublicKey={vapidPublicKey()} />
+            <PushToggle locale={audience.locale} vapidPublicKey={vapidPublicKey()} placement="full" />
           </section>
         )}
       </main>

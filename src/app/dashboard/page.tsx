@@ -168,6 +168,9 @@ export default async function DashboardPage() {
       <main className="mx-auto max-w-5xl px-6 py-10 md:px-8">
         {audience.gender === null && <GenderPrompt locale={audience.locale} />}
         <InstallPrompt locale={audience.locale} />
+        {view.showLeaderboard && (
+          <PushToggle locale={audience.locale} vapidPublicKey={vapidPublicKey()} placement="top" />
+        )}
         {view.showScore && (
           <div className="mb-5 grid gap-4 md:grid-cols-2">
             <StreakBadge streak={streak} locale={audience.locale} />
@@ -227,11 +230,6 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        {view.showLeaderboard && (
-          <div className="mt-5">
-            <PushToggle locale={audience.locale} vapidPublicKey={vapidPublicKey()} compact />
-          </div>
-        )}
 
         {view.showScore && (
           <section className="mt-5">
@@ -247,6 +245,10 @@ export default async function DashboardPage() {
             <WorkoutList workouts={serializedWorkouts} locale={audience.locale} />
           </div>
         </section>
+
+        {view.showLeaderboard && (
+          <PushToggle locale={audience.locale} vapidPublicKey={vapidPublicKey()} placement="bottom" />
+        )}
       </main>
     </>
   );
