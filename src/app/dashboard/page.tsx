@@ -13,6 +13,7 @@ import { t } from "@/lib/i18n";
 import AppNav from "@/components/AppNav";
 import ScoreGauge from "@/components/ScoreGauge";
 import WorkoutForm from "@/components/WorkoutForm";
+import { toWorkoutTypeKey } from "@/lib/workoutTypes";
 import WorkoutList from "@/components/WorkoutList";
 import WeekTitleBadge from "@/components/WeekTitleBadge";
 import TitleProgressBar from "@/components/TitleProgressBar";
@@ -117,6 +118,10 @@ export default async function DashboardPage() {
     select: { id: true, type: true, duration: true, distanceKm: true, date: true },
   });
   const streak = computeStreak(history);
+  // The sports this person actually logs, most recent first — one tap away in the form.
+  const recentTypes = Array.from(
+    new Set([...history].sort((a, b) => b.date.getTime() - a.date.getTime()).map((w) => toWorkoutTypeKey(w.type)))
+  ).slice(0, 5);
   const records = computeRecords(history);
   const goal =
     isGoalType(user.goalType) && user.goalValue
@@ -214,7 +219,7 @@ export default async function DashboardPage() {
             {t(audience.locale, "log_workout")}
           </h2>
           <div className="mt-6">
-            <WorkoutForm locale={audience.locale} />
+            <WorkoutForm locale={audience.locale} recentTypes={recentTypes} />
           </div>
         </section>
 

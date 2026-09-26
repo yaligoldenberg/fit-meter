@@ -93,17 +93,20 @@ export default function AppNav({
           })}
         </nav>
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <div className="min-w-0 max-w-[8rem] text-end leading-tight sm:max-w-[11rem]">
-            <span className="hidden truncate text-[13px] font-semibold text-ink sm:block">
+          <Link
+            href="/profile"
+            aria-label={`${displayName} (@${username}) — ${t(locale, "nav_profile_link")}`}
+            title={t(locale, "nav_profile_link")}
+            aria-current={pathname === "/profile" ? "page" : undefined}
+            className="group min-w-0 max-w-[8rem] text-end leading-tight sm:max-w-[11rem]"
+          >
+            <span className="hidden truncate text-[13px] font-semibold text-ink underline-offset-4 group-hover:underline sm:block">
               {displayName}
             </span>
-            <span
-              className="block truncate text-xs text-slate"
-              title={t(locale, "nav_your_username")}
-            >
+            <span className="block truncate text-xs text-slate underline-offset-4 group-hover:text-ink group-hover:underline">
               @{username}
             </span>
-          </div>
+          </Link>
           <div className="shrink-0">
             <LanguageToggle locale={locale} />
           </div>

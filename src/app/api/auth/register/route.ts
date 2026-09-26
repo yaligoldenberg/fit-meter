@@ -4,15 +4,12 @@ import { prisma } from "@/lib/db";
 import { hashPassword, createSessionToken, SESSION_COOKIE } from "@/lib/auth";
 import { recordEvent } from "@/lib/research";
 import { apiError } from "@/lib/apiErrors";
+import { usernameSchema, displayNameSchema, uniqueViolationTarget } from "@/lib/accountRules";
 
 const schema = z.object({
   email: z.string().email(),
-  username: z
-    .string()
-    .min(3)
-    .max(20)
-    .regex(/^[a-zA-Z0-9_]+$/, "Letters, numbers and underscores only"),
-  displayName: z.string().min(1).max(40),
+  username: usernameSchema,
+  displayName: displayNameSchema,
   password: z.string().min(6).max(72),
   gender: z.enum(["F", "M"]),
   locale: z.enum(["he", "en"]).optional(),
@@ -53,9 +50,7 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     // Two simultaneous signups can both clear the check above; the unique constraint is
     // the real arbiter, so translate its violation instead of returning a 500.
-    const target = (e as { code?: string; meta?: { target?: string[] } })?.code === "P2002"
-      ? (e as { meta?: { target?: string[] } }).meta?.target ?? []
-      : null;
+    const target = uniqueViolationTarget(e);
     if (!target) throw e;
     const key = target.includes("email") ? "email_taken" : "username_taken";
     return NextResponse.json({ error: apiError(key, locale ?? "he") }, { status: 409 });

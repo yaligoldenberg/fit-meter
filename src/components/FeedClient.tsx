@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { WORKOUT_TYPES, WorkoutTypeKey, typeLabel } from "@/lib/workoutTypes";
 import { DifficultyTier, TIER_META } from "@/lib/difficulty";
 import CommentThread from "./CommentThread";
@@ -194,7 +195,18 @@ export default function FeedClient({ locale, meId }: { locale: Locale; meId: str
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-                      <p className="truncate font-semibold text-ink">{displayName}</p>
+                      <p className="truncate font-semibold text-ink">
+                        {item.user?.username ? (
+                          <Link
+                            href={`/profile/${encodeURIComponent(item.user.username)}`}
+                            className="underline-offset-4 hover:underline"
+                          >
+                            {displayName}
+                          </Link>
+                        ) : (
+                          displayName
+                        )}
+                      </p>
                       <span className="shrink-0 text-[11px] text-slate-light">
                         {relativeDate(item.date, locale)}
                       </span>

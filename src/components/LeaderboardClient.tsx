@@ -52,46 +52,50 @@ function Row({ row, locale }: { row: LeaderboardRow; locale: Locale }) {
     gender: row.gender === "F" || row.gender === "M" ? row.gender : null,
   });
   return (
-    <li
-      className={`flex items-center gap-3 py-3.5 sm:gap-4 ${
-        row.isMe ? "border-s-[3px] border-signal bg-chalk ps-3" : ""
-      }`}
-    >
-      <span
-        className={`w-7 shrink-0 text-center font-display text-3xl leading-none num-tabular ${
-          top3 ? "text-ink" : "text-slate-light"
+    <li className={row.isMe ? "border-s-[3px] border-signal bg-chalk" : ""}>
+      {/* The whole row opens the person's page — a big target on phones. */}
+      <Link
+        href={`/profile/${encodeURIComponent(row.username)}`}
+        className={`group flex items-center gap-3 py-3.5 outline-none transition-colors hover:bg-chalk focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink sm:gap-4 ${
+          row.isMe ? "ps-3" : ""
         }`}
       >
-        {row.rank}
-      </span>
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-rule text-[13px] font-semibold text-slate">
-        {initials(row.displayName)}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-ink">
-          {row.displayName}
-          {row.isMe && (
-            <span className="ms-1.5 font-normal text-slate-light">{t(locale, "you_marker")}</span>
-          )}
-        </p>
-        <p className={`truncate text-[13px] font-semibold ${tierColor(title.tier)}`}>
-          {title.emoji} {title.title}
-        </p>
-        <p className="text-[13px] text-slate-light">
-          {tn(locale, "lb_days", row.activeDays)} · {tn(locale, "lb_workouts", row.workoutCount)}
-        </p>
-      </div>
-      <div className="flex shrink-0 flex-col items-end gap-1">
-        <div className="flex items-baseline gap-2">
-          <span className={`font-display text-3xl leading-none ${gradeColor(row.grade)}`}>
-            {row.grade}
-          </span>
-          <span className="num-tabular w-8 text-end text-sm text-slate">{row.score}</span>
-        </div>
-        <span className="num-tabular text-[13px] text-slate-light">
-          {row.effort} {t(locale, "lb_effort")}
+        <span
+          className={`w-7 shrink-0 text-center font-display text-3xl leading-none num-tabular ${
+            top3 ? "text-ink" : "text-slate-light"
+          }`}
+        >
+          {row.rank}
         </span>
-      </div>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-rule text-[13px] font-semibold text-slate">
+          {initials(row.displayName)}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold text-ink underline-offset-4 group-hover:underline">
+            {row.displayName}
+            {row.isMe && (
+              <span className="ms-1.5 font-normal text-slate-light">{t(locale, "you_marker")}</span>
+            )}
+          </p>
+          <p className={`truncate text-[13px] font-semibold ${tierColor(title.tier)}`}>
+            {title.emoji} {title.title}
+          </p>
+          <p className="text-[13px] text-slate-light">
+            {tn(locale, "lb_days", row.activeDays)} · {tn(locale, "lb_workouts", row.workoutCount)}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <div className="flex items-baseline gap-2">
+            <span className={`font-display text-3xl leading-none ${gradeColor(row.grade)}`}>
+              {row.grade}
+            </span>
+            <span className="num-tabular w-8 text-end text-sm text-slate">{row.score}</span>
+          </div>
+          <span className="num-tabular text-[13px] text-slate-light">
+            {row.effort} {t(locale, "lb_effort")}
+          </span>
+        </div>
+      </Link>
     </li>
   );
 }

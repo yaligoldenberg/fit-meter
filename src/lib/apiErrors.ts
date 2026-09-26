@@ -18,6 +18,11 @@ const API_ERRORS = {
 
   email_taken: { he: 'הדוא"ל כבר רשום', en: "Email already registered" },
   username_taken: { he: "שם המשתמש תפוס", en: "Username taken" },
+  username_invalid: {
+    he: "שם משתמש: 3–20 תווים, אותיות באנגלית, ספרות וקו תחתון בלבד",
+    en: "Username: 3–20 characters, letters, numbers and underscores only",
+  },
+  display_name_invalid: { he: "שם לתצוגה: 1–40 תווים", en: "Display name: 1–40 characters" },
   credentials_missing: {
     he: 'הזינו שם משתמש או דוא"ל וסיסמה',
     en: "Enter your username/email and password",

@@ -1,16 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  WORKOUT_TYPE_ORDER,
-  WORKOUT_TYPES,
-  WorkoutTypeKey,
-  typeLabel,
-  usesDistance,
-} from "@/lib/workoutTypes";
+import { WORKOUT_TYPE_ORDER, WorkoutTypeKey, usesDistance } from "@/lib/workoutTypes";
 import { rateWorkout, explainRating, TIER_META } from "@/lib/difficulty";
 import { Locale, StringKey, t } from "@/lib/i18n";
+import SportPicker from "./SportPicker";
 
 function todayLocalISO(): string {
   const d = new Date();
@@ -19,14 +14,18 @@ function todayLocalISO(): string {
   return local.toISOString().slice(0, 10);
 }
 
-// WORKOUT_TYPE_ORDER is already sorted most-common-first; show this many by
-// default and let "More" reveal the rest.
-const COMMON_TYPE_COUNT = 8;
-
-export default function WorkoutForm({ locale }: { locale: Locale }) {
+export default function WorkoutForm({
+  locale,
+  recentTypes,
+}: {
+  locale: Locale;
+  /** This person's own sports, most recent first — the picker's one-tap chips. */
+  recentTypes?: WorkoutTypeKey[];
+}) {
   const router = useRouter();
-  const [type, setType] = useState<WorkoutTypeKey>("RUNNING");
-  const [showAllTypes, setShowAllTypes] = useState(false);
+  // Someone new gets the app's most-logged sports as chips until they have their own.
+  const quickTypes = recentTypes && recentTypes.length > 0 ? recentTypes : WORKOUT_TYPE_ORDER.slice(0, 5);
+  const [type, setType] = useState<WorkoutTypeKey>(quickTypes[0]);
   const [duration, setDuration] = useState("30");
   const [distanceKm, setDistanceKm] = useState("");
   const [note, setNote] = useState("");
@@ -34,6 +33,9 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  // `loading` disables the button, but only after React re-renders. A ref flips
+  // synchronously, so a second tap or Enter landing before that can't send a second save.
+  const inFlight = useRef(false);
 
   // The same function the server will run on save, so the number shown while filling the
   // form is the number that gets stored — the rating is derived, not negotiated.
@@ -46,6 +48,8 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (inFlight.current) return;
+    inFlight.current = true;
     setError(null);
     setLoading(true);
     setSuccess(false);
@@ -76,43 +80,14 @@ export default function WorkoutForm({ locale }: { locale: Locale }) {
     } catch {
       setError(t(locale, "network_error"));
     } finally {
+      inFlight.current = false;
       setLoading(false);
     }
   }
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5">
-      <div>
-        <p className="caption mb-2.5">{t(locale, "field_type")}</p>
-        <div className="flex flex-wrap gap-2">
-          {WORKOUT_TYPE_ORDER.filter(
-            (key, i) => showAllTypes || i < COMMON_TYPE_COUNT || key === type
-          ).map((key) => {
-            const active = type === key;
-            return (
-              <button
-                type="button"
-                key={key}
-                aria-pressed={active}
-                onClick={() => setType(key)}
-                className={`chip flex items-center gap-2 ${active ? "chip-on" : ""}`}
-              >
-                <span>{WORKOUT_TYPES[key].icon}</span>
-                {typeLabel(key, locale)}
-              </button>
-            );
-          })}
-          {WORKOUT_TYPE_ORDER.length > COMMON_TYPE_COUNT && (
-            <button
-              type="button"
-              onClick={() => setShowAllTypes((v) => !v)}
-              className="chip border-dashed"
-            >
-              {showAllTypes ? t(locale, "less") : t(locale, "more")}
-            </button>
-          )}
-        </div>
-      </div>
+      <SportPicker value={type} onChange={setType} recentTypes={quickTypes} locale={locale} />
 
       <div className="grid min-w-0 grid-cols-2 gap-4 sm:grid-cols-4">
         <label className="flex flex-col gap-1.5">

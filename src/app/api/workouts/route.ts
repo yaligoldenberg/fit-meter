@@ -20,6 +20,9 @@ const schema = z.object({
   date: z.string(),
 });
 
+/** How recently an identical workout must have been saved to count as the same save. */
+const DUPLICATE_WINDOW_MS = 10_000;
+
 export async function GET() {
   const { locale } = await getAudience();
   const session = await getSession();
@@ -53,16 +56,29 @@ export async function POST(req: NextRequest) {
   // came from so queries and the research export can read it without re-rating.
   const { intensity } = rateWorkout({ type, duration, distanceKm });
 
-  const workout = await prisma.workout.create({
-    data: {
-      userId: session.userId,
-      type,
-      duration,
-      intensity,
-      distanceKm: distanceKm ?? null,
-      note: note || null,
-      date: parsedDate,
-    },
+  const data = {
+    userId: session.userId,
+    type,
+    duration,
+    intensity,
+    distanceKm: distanceKm ?? null,
+    note: note || null,
+    date: parsedDate,
+  };
+
+  // An identical workout saved moments ago is the same save arriving twice — a double
+  // tap, or Save pressed again because the form still showed the same sport and date.
+  // The database has bursts of these, up to ten copies half a second apart, and each one
+  // counted towards the score. The advisory lock serialises one user's saves so two
+  // requests can't both miss each other's row; the second gets the first's workout back.
+  const { workout, created } = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${session.userId}))`;
+    const duplicate = await tx.workout.findFirst({
+      where: { ...data, createdAt: { gte: new Date(Date.now() - DUPLICATE_WINDOW_MS) } },
+      orderBy: { createdAt: "desc" },
+    });
+    if (duplicate) return { workout: duplicate, created: false };
+    return { workout: await tx.workout.create({ data }), created: true };
   });
-  return NextResponse.json({ workout }, { status: 201 });
+  return NextResponse.json({ workout }, { status: created ? 201 : 200 });
 }

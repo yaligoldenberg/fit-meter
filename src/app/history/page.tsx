@@ -5,29 +5,13 @@ import { getAudience } from "@/lib/audience";
 import { viewFor, recordEvent } from "@/lib/research";
 import { scoreWindow, trailingWindow, gradeColor } from "@/lib/scoring";
 import { evaluateWeekTitle, tierColor } from "@/lib/weeklyTitles";
-import {
-  WORKOUT_TYPES,
-  WorkoutTypeKey,
-  typeLabel,
-  intensityLabel,
-  intensityHint,
-} from "@/lib/workoutTypes";
-import { rateWorkout, explainRating, TIER_META } from "@/lib/difficulty";
 import { t, tn, Locale } from "@/lib/i18n";
 import AppNav from "@/components/AppNav";
 import WeekTitleBadge from "@/components/WeekTitleBadge";
+import WorkoutLog from "@/components/WorkoutLog";
 
 function monthDayFormatter(locale: Locale) {
   return new Intl.DateTimeFormat(locale === "he" ? "he-IL" : "en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-}
-
-function weekdayMonthDayFormatter(locale: Locale) {
-  return new Intl.DateTimeFormat(locale === "he" ? "he-IL" : "en-US", {
-    weekday: "short",
     month: "short",
     day: "numeric",
     timeZone: "UTC",
@@ -54,7 +38,6 @@ export default async function HistoryPage({
   const view = viewFor(user.condition);
   await recordEvent(session.userId, "HISTORY_VIEW", { condition: user.condition });
   const MONTH_DAY = monthDayFormatter(audience.locale);
-  const WEEKDAY_MONTH_DAY = weekdayMonthDayFormatter(audience.locale);
 
   const weeks = [];
   for (let i = 9; i >= 0; i--) {
@@ -83,17 +66,6 @@ export default async function HistoryPage({
     skip: (page - 1) * HISTORY_PAGE_SIZE,
     take: HISTORY_PAGE_SIZE,
   });
-
-  const groups: { key: string; label: string; workouts: typeof allWorkouts }[] = [];
-  for (const w of allWorkouts) {
-    const key = w.date.toISOString().slice(0, 10);
-    let group = groups.find((g) => g.key === key);
-    if (!group) {
-      group = { key, label: WEEKDAY_MONTH_DAY.format(w.date), workouts: [] };
-      groups.push(group);
-    }
-    group.workouts.push(w);
-  }
 
   const hasHistory = totalWorkouts > 0;
 
@@ -215,70 +187,14 @@ export default async function HistoryPage({
               <h2 className="font-display text-2xl leading-none text-ink">
                 {t(audience.locale, "history_full_log_heading")}
               </h2>
-              <div className="sheet mt-4 p-6 md:p-8">
-                {groups.map((group, gi) => (
-                  <div key={group.key} className={gi > 0 ? "mt-7" : ""}>
-                    <p className="caption">{group.label}</p>
-                    <div className="mt-2.5 divide-y divide-rule border-t border-rule">
-                      {group.workouts.map((w) => {
-                        const typeKey = (w.type in WORKOUT_TYPES ? w.type : "OTHER") as WorkoutTypeKey;
-                        const typeIcon = WORKOUT_TYPES[typeKey].icon;
-                        const rating = rateWorkout(w);
-                        const tier = TIER_META[rating.tier];
-                        return (
-                          <div key={w.id} className="flex flex-wrap items-center gap-3 py-3">
-                            <span className="text-slate-light">{typeIcon}</span>
-                            <span className="font-semibold text-ink">{typeLabel(typeKey, audience.locale)}</span>
-                            <span className="text-sm text-slate num-tabular">
-                              {w.duration} {t(audience.locale, "unit_min")}
-                            </span>
-                            <span
-                              title={intensityHint(rating.intensity, audience.locale)}
-                              className="text-sm text-slate-light"
-                            >
-                              {intensityLabel(rating.intensity, audience.locale)}
-                            </span>
-                            {w.distanceKm != null && (
-                              <span className="text-sm text-slate num-tabular">
-                                {w.distanceKm} {t(audience.locale, "unit_km")}
-                              </span>
-                            )}
-                            <span
-                              title={explainRating(w, rating, audience.locale)}
-                              className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${tier.className}`}
-                            >
-                              {t(audience.locale, `difficulty_${rating.tier}`)} · {rating.rating}
-                            </span>
-                            {w.note && (
-                              <span className="w-full text-sm text-slate-light md:w-auto md:flex-1 md:truncate">
-                                “{w.note}”
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {totalPages > 1 && (
-                <div className="mt-4 flex items-center justify-between text-sm">
-                  {page < totalPages ? (
-                    <a href={`/history?page=${page + 1}`} className="text-slate underline-offset-4 hover:text-signal hover:underline">
-                      {t(audience.locale, "history_older")}
-                    </a>
-                  ) : (
-                    <span />
-                  )}
-                  {page > 1 ? (
-                    <a href={`/history?page=${page - 1}`} className="text-slate underline-offset-4 hover:text-signal hover:underline">
-                      {t(audience.locale, "history_newer")}
-                    </a>
-                  ) : (
-                    <span />
-                  )}
-                </div>
-              )}
+              <WorkoutLog
+                workouts={allWorkouts}
+                locale={audience.locale}
+                showNotes
+                page={page}
+                totalPages={totalPages}
+                basePath="/history"
+              />
             </section>
           </>
         )}

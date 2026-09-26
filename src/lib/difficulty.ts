@@ -65,29 +65,67 @@ export interface WorkoutRating {
  */
 const ACTIVITY_METS: Record<WorkoutTypeKey, { easy: number; typical: number; hard: number }> = {
   RUNNING: { easy: 7.0, typical: 9.8, hard: 12.8 },
+  // Cross-country running; terrain makes speed a poor guide, so it's rated off this row.
+  TRAIL_RUNNING: { easy: 7.0, typical: 9.0, hard: 12.0 },
   CYCLING: { easy: 5.8, typical: 8.0, hard: 12.0 },
+  // Instructor-led spin class. No pace table — a stationary bike's distance is fiction.
+  SPINNING: { easy: 5.5, typical: 8.5, hard: 11.0 },
+  MOUNTAIN_BIKING: { easy: 6.0, typical: 8.5, hard: 12.0 },
   SWIMMING: { easy: 5.8, typical: 8.3, hard: 10.3 },
   WALKING: { easy: 3.0, typical: 3.8, hard: 5.0 },
   // Hiking scales with terrain and pack weight rather than speed.
   HIKING: { easy: 4.5, typical: 5.3, hard: 7.8 },
   STRENGTH: { easy: 3.5, typical: 5.0, hard: 6.0 },
+  // The Compendium puts powerlifting and Olympic lifting at the vigorous end of
+  // resistance training: heavy, but with long rests between sets.
+  POWERLIFTING: { easy: 5.0, typical: 6.0, hard: 7.0 },
+  WEIGHTLIFTING: { easy: 5.0, typical: 6.0, hard: 7.0 },
+  CALISTHENICS: { easy: 3.8, typical: 5.5, hard: 8.0 },
   CROSSFIT: { easy: 5.0, typical: 7.5, hard: 9.0 },
+  // No Compendium entry. A race is 8 km of running split by sled, wall-ball and lunge
+  // stations, so it sits between running and vigorous circuit training.
+  HYROX: { easy: 7.0, typical: 9.0, hard: 11.0 },
   HIIT: { easy: 6.0, typical: 8.0, hard: 10.0 },
   ROWING: { easy: 4.8, typical: 7.0, hard: 8.5 },
   ELLIPTICAL: { easy: 4.6, typical: 5.0, hard: 7.0 },
+  STAIR_CLIMBER: { easy: 6.0, typical: 9.0, hard: 11.0 },
+  // The Compendium's 11.8 is continuous skipping; real sessions are broken by rests.
+  JUMP_ROPE: { easy: 8.3, typical: 10.0, hard: 12.3 },
+  TRIATHLON: { easy: 7.5, typical: 9.5, hard: 12.0 },
+  AEROBICS: { easy: 5.0, typical: 7.3, hard: 9.5 },
   YOGA: { easy: 2.3, typical: 3.0, hard: 4.0 },
   // Pilates sits just above yoga — controlled, but constant core load.
   PILATES: { easy: 2.5, typical: 3.2, hard: 4.5 },
+  BARRE: { easy: 3.0, typical: 3.8, hard: 5.0 },
+  STRETCHING: { easy: 2.0, typical: 2.3, hard: 3.0 },
   // Racquet sports: doubles/social at the low end, singles match play at the top.
   TENNIS: { easy: 5.0, typical: 7.3, hard: 8.5 },
   PADEL: { easy: 4.8, typical: 6.5, hard: 8.0 },
+  SQUASH: { easy: 6.0, typical: 7.3, hard: 12.0 },
+  BADMINTON: { easy: 4.5, typical: 5.5, hard: 7.0 },
+  TABLE_TENNIS: { easy: 3.0, typical: 4.0, hard: 5.5 },
+  PICKLEBALL: { easy: 3.5, typical: 4.5, hard: 6.0 },
   SOCCER: { easy: 6.0, typical: 7.0, hard: 10.0 },
   BASKETBALL: { easy: 4.5, typical: 6.5, hard: 8.0 },
+  // Recreational indoor play; beach and competitive games reach the top.
+  VOLLEYBALL: { easy: 3.0, typical: 4.0, hard: 8.0 },
+  HANDBALL: { easy: 6.0, typical: 8.0, hard: 12.0 },
+  RUGBY: { easy: 6.3, typical: 8.3, hard: 10.0 },
+  HOCKEY: { easy: 6.0, typical: 8.0, hard: 10.0 },
   CLIMBING: { easy: 5.0, typical: 7.5, hard: 9.0 },
   // Bag work through to full sparring.
   BOXING: { easy: 5.5, typical: 7.8, hard: 12.8 },
+  KICKBOXING: { easy: 5.5, typical: 8.0, hard: 10.3 },
   MARTIAL_ARTS: { easy: 5.3, typical: 7.8, hard: 10.3 },
   DANCE: { easy: 3.5, typical: 5.0, hard: 7.8 },
+  // Most of a surf session is sitting on the board waiting for a wave.
+  SURFING: { easy: 2.5, typical: 3.0, hard: 5.0 },
+  SUP: { easy: 3.5, typical: 6.0, hard: 8.0 },
+  KAYAKING: { easy: 3.5, typical: 5.0, hard: 8.0 },
+  SKATING: { easy: 5.5, typical: 7.0, hard: 9.8 },
+  SKIING: { easy: 4.3, typical: 5.3, hard: 8.0 },
+  SNOWBOARDING: { easy: 4.3, typical: 5.3, hard: 8.0 },
+  GOLF: { easy: 3.5, typical: 4.8, hard: 5.3 },
   SPORT: { easy: 5.0, typical: 7.0, hard: 10.0 },
   OTHER: { easy: 3.5, typical: 5.0, hard: 7.0 },
 };

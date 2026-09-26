@@ -61,6 +61,7 @@ export type EventType =
   | "LEADERBOARD_VIEW"
   | "RANKS_VIEW"
   | "HISTORY_VIEW"
+  | "PROFILE_VIEW"
   | "FEED_VIEW"
   | "KUDOS_GIVEN"
   | "TITLE_CHANGE"
